@@ -116,3 +116,14 @@ A função atualmente fixa o ambiente como development.
 
 A infraestrutura ainda não substitui DataStore e não realiza transações de roubo
 entre jogadores. Não migrar persistência de usuários nesta etapa.
+
+
+## Estado provisionado em 16/11/2026
+
+- Projeto Supabase: `BrainrotFarm Dev`, ref `dhlomskkibsjnvsnvozy`, região `sa-east-1`, status `ACTIVE_HEALTHY`.
+- Migrations aplicadas: banco inicial, índice da FK de decisões e seed de conhecimento.
+- Contagens verificadas: cinco notas, quatro decisões, zero testes de jogo registrados e nove configurações de development.
+- Edge Function `roblox-gateway`: implantada e ACTIVE, versão 1. O segredo `BRAINROTFARM_ROBLOX_API_KEY` ainda não está cadastrado, portanto o gateway responde 401 até configurar o segredo.
+- ChatGPT: ferramenta Supabase conectada e consultas SQL executadas.
+- Codex: configuração por projeto em `.codex/config.toml`, restrita a este project ref e read-only. OAuth precisa ser concluído no computador local pelo usuário; instruções em `docs/CODEX_SUPABASE.md`.
+- Roblox: ainda não ligado ao gateway; requer segredo no Edge Function e no Roblox Secrets Store.
