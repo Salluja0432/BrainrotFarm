@@ -1,38 +1,68 @@
 # Conectar Codex ao Supabase — Brainrot Farm
 
-## Configuração já versionada
+## Primeiro: instalar a Codex CLI no Windows
 
-O repositório possui `.codex/config.toml`, que registra o servidor remoto Supabase MCP com:
+Ter acesso ao aplicativo Codex não significa que o comando `codex` esteja instalado no PowerShell. A CLI é uma ferramenta separada.
+
+Instalador oficial para Windows (execute no PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"
+```
+
+Feche e abra novamente o PowerShell e verifique:
+
+```powershell
+codex --version
+```
+
+Alternativa oficial via npm, caso prefira usar Node.js:
+
+```powershell
+npm install -g @openai/codex
+```
+
+Se a instalação terminar mas o comando não for encontrado, feche e reabra o terminal. Se continuar, confira `npm config get prefix` e se a pasta global do npm está no PATH do Windows.
+
+## Configuração segura do servidor Supabase
+
+O repositório possui `.codex/config.toml`, com configuração MCP remota:
 - Project ref fixo: `dhlomskkibsjnvsnvozy` (BrainrotFarm Dev).
-- `read_only=true`: consultas de banco são executadas em modo somente leitura.
-- `features=database,docs`: só grupos de ferramentas de banco e documentação.
-- Aprovação de ferramentas em `prompt`.
+- `read_only=true`: operações SQL do MCP ficam em modo somente leitura.
+- `features=database,docs`: somente grupos de banco de dados e documentação.
+- Aprovação de ferramentas: `prompt`.
 
-A configuração do projeto só é carregada pelo Codex depois de o usuário confiar no repositório. Ela não contém token, senha nem chave de API.
+O Codex carrega configurações MCP de projeto somente quando o repositório foi marcado como confiável.
 
-## Passos no Windows / PowerShell
+### Opção A — usando o repositório clonado
 
-1. Faça pull da versão mais recente de `main` no computador.
-2. Abra no Codex a pasta raiz `BrainrotFarm` e marque-a como confiável quando o Codex solicitar.
-3. No terminal integrado dessa pasta, execute:
+1. Atualize/clonar o repositório privado BrainrotFarm.
+2. Abra a raiz do repositório no Codex e marque-o como confiável.
+3. No terminal nessa pasta, execute:
 
 ```powershell
 codex mcp list
 codex mcp login supabase
 ```
 
-4. O navegador abrirá o fluxo OAuth do Supabase. Entre na conta que contém a organização `trying` e autorize o acesso ao projeto solicitado.
-5. Depois do login, execute:
+4. Conclua OAuth no navegador, autenticando na conta Supabase que contém a organização `trying`.
+5. Reinicie a sessão do Codex. No TUI, `/mcp` mostra ferramentas MCP disponíveis.
+
+### Opção B — adicionar à configuração do usuário
+
+Se estiver trabalhando numa cópia local antiga do projeto que ainda não contém `.codex/config.toml`, registre o servidor no perfil local do Codex:
 
 ```powershell
+codex mcp add supabase --url "https://mcp.supabase.com/mcp?project_ref=dhlomskkibsjnvsnvozy&read_only=true&features=database,docs"
+codex mcp login supabase
 codex mcp list
 ```
 
-6. Reinicie a sessão do Codex (ou o app/extensão) para recarregar as ferramentas MCP. No TUI, use `/mcp` para conferir os servidores ativos.
+Essa opção escreve em `~/.codex/config.toml` e também permanece limitada ao projeto de desenvolvimento e em modo somente leitura.
 
-A documentação oficial do Codex diz que CLI, aplicativo desktop e extensão IDE compartilham a configuração MCP do mesmo host e que a autenticação OAuth é iniciada com `codex mcp login <server-name>`.
+Não é necessário usar as opções A e B ao mesmo tempo. Prefira a opção A quando a pasta aberta for o clone atualizado do repositório; use a B para a pasta local existente.
 
-## Prompt de verificação para o Codex
+## Prompt de verificação
 
 Depois de conectar, peça:
 
@@ -49,13 +79,12 @@ Resultados esperados:
 - Tabelas: `game_config`, `game_events`, `project_decisions`,
   `project_notes`, `test_runs`.
 - `game_config` tem nove linhas iniciais em development.
+- `project_notes` tem cinco registros.
+- `project_decisions` tem quatro registros.
 
-## Para habilitar escrita posteriormente
+## Segurança
 
-Não remova `read_only=true` ainda. Primeiro conclua a revisão do banco,
-as verificações dos advisors e a conexão OAuth. Quando houver necessidade
-real de escrita, uma mudança separada deverá habilitar apenas o acesso
-necessário, manter aprovação explícita de operações e preservar migrations
-versionadas no GitHub.
-
-Nunca use MCP em produção. Nunca coloque secrets no repositório ou no prompt.
+- Não remova `read_only=true` nesta etapa.
+- Não conecte MCP a Supabase de produção.
+- Nunca cole tokens OAuth, senhas, service-role keys ou segredos em prompts/commits.
+- Para liberar escrita futuramente, exija revisão específica e preserve migrations no GitHub.
