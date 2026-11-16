@@ -52,3 +52,14 @@ Brainrot Farm é um conceito original de simulador de coleção e administraçã
 Este repositório começa como **documentação do projeto**. A presença de uma decisão ou descrição aqui não prova que a funcionalidade exista no código ou funcione no Roblox. Cada afirmação de implementação deve apontar para o código e evidência de teste.
 
 Repositório privado da conta Salluja0432. Não tornar público sem decisão explícita.
+
+
+## Banco compartilhado
+
+A fundação Supabase está versionada em [supabase/](supabase/):
+- [Arquitetura e regras de integração](docs/BANCO_COMPARTILHADO_SUPABASE.md)
+- [Migration inicial PostgreSQL](supabase/migrations/20261116000100_brainrot_shared_database.sql)
+- [Edge Function para Roblox](supabase/functions/roblox-gateway/index.ts)
+- [Instruções de configuração](supabase/README.md)
+
+**Estado:** especificação e arquivos criados no GitHub. O projeto Supabase ainda precisa ser criado/conectado, a migration aplicada e a Edge Function implantada. Não há banco remoto provisionado nesta etapa. O Roblox DataStore continua responsável pelos saves dos jogadores.
