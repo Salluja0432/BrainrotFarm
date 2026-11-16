@@ -101,7 +101,7 @@ administrativa em LocalScripts, ReplicatedStorage ou arquivos versionados.
 - Projeto criado e estado ACTIVE_HEALTHY confirmado.
 - Cinco tabelas verificadas por consulta ao catálogo PostgreSQL.
 - Nove configurações iniciais confirmadas em development.
-- Duas migrations aplicadas com sucesso.
+- Três migrations aplicadas com sucesso.
 - Edge Function listada como ACTIVE.
 - Advisors: RLS sem políticas é intencional nesta etapa, pois os papéis públicos
   não recebem grants; foi identificado e corrigido o índice ausente da FK
