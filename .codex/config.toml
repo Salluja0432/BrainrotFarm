@@ -1,0 +1,11 @@
+# Brainrot Farm — Supabase MCP
+# Escopo limitado ao projeto de desenvolvimento e somente leitura.
+# Codex exige que este repositório seja marcado como confiável para carregar
+# configurações MCP em nível de projeto.
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=dhlomskkibsjnvsnvozy&read_only=true&features=database,docs"
+enabled = true
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 60
