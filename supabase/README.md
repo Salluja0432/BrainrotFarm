@@ -1,5 +1,17 @@
 # Supabase — Brainrot Farm
 
+## Estado do ambiente
+
+- Projeto: **BrainrotFarm Dev**
+- Organização: `trying`
+- Project ref: `dhlomskkibsjnvsnvozy`
+- Região: São Paulo (`sa-east-1`)
+- Plano: Free
+- Estado verificado: `ACTIVE_HEALTHY`
+- URL: https://dhlomskkibsjnvsnvozy.supabase.co
+- Migration inicial e índice complementar aplicados com sucesso.
+- Edge Function `roblox-gateway` implantada (versão 1, ACTIVE).
+
 ## Papel desta infraestrutura
 
 O Supabase é a base compartilhada para:
@@ -9,78 +21,90 @@ O Supabase é a base compartilhada para:
 - telemetria mínima de desenvolvimento.
 
 O Roblox DataStore continua sendo a fonte de verdade para moedas, inventário,
-criaturas e progresso dos jogadores nesta etapa. Esta integração não migra saves.
+criaturas e progresso dos jogadores. Esta integração não migra saves.
 
-## Estrutura
+## Estrutura criada
 
-- migrations/: schema SQL versionado no Git;
-- functions/roblox-gateway/: API de servidor para o Roblox;
-- config.toml: configuração local da Edge Function.
+- `project_notes`: notas de projeto.
+- `project_decisions`: decisões e histórico de substituição.
+- `test_runs`: evidências dos testes.
+- `game_config`: configuração por ambiente.
+- `game_events`: telemetria mínima.
 
-## Preparação
+Todas as cinco tabelas têm RLS habilitada e privilégios revogados para
+`anon` e `authenticated`. Acesso administrativo é feito por ferramentas
+conectadas e pela Edge Function no servidor.
 
-1. Crie/seleciona um projeto Supabase exclusivo de desenvolvimento chamado BrainrotFarm Dev.
-2. Conecte o Supabase ao ChatGPT para operar o projeto após autenticação.
-3. No computador de desenvolvimento, instale a Supabase CLI.
-4. Faça login e vincule a pasta ao projeto usando o project ref correto.
-5. Revise a migration antes de aplicá-la:
-   supabase db push
-6. Configure a função:
-   supabase secrets set BRAINROTFARM_ROBLOX_API_KEY=<segredo-gerado-localmente>
-7. Faça deploy:
-   supabase functions deploy roblox-gateway
+## Migrations
 
-Não cole credenciais em conversas, issues, commits ou arquivos .env versionados.
-Use um segredo aleatório de pelo menos 32 bytes e mantenha-o fora do Git.
+1. `20261116000100_brainrot_shared_database.sql`
+2. `20261116000200_index_decision_supersedes.sql`
 
-## Codex
+As duas foram aplicadas ao projeto de desenvolvimento. Mantenha futuras
+alterações versionadas em `supabase/migrations/` e aplique-as somente após
+revisão.
 
-Instale o plugin de agentes do Supabase no ambiente Codex, seguindo a documentação
-oficial. Alternativamente, configure o MCP oficial do Supabase com escopo para
-este project ref. Comece com acesso read-only para inspeção; habilite escrita
-somente quando estiver aplicando uma migration revisada.
+## Edge Function
 
-Comando documentado pelo Supabase para plugin de agentes:
-npx plugins add supabase-community/supabase-plugin
+Nome: `roblox-gateway`
 
-O MCP remoto aceita escopo por project_ref e modo read_only. Não conecte o agente
-a todos os projetos da conta se ele só precisa trabalhar neste projeto.
+Rotas:
+- GET `/functions/v1/roblox-gateway/config`
+- POST `/functions/v1/roblox-gateway/events`
 
-## Roblox
+A função foi implantada, mas **não está pronta para tráfego do Roblox**:
+o segredo próprio `BRAINROTFARM_ROBLOX_API_KEY` ainda não foi configurado.
+Sem esse segredo, todas as chamadas falham fechadas com HTTP 401. A função
+usa `SUPABASE_SERVICE_ROLE_KEY` apenas no ambiente seguro do Supabase.
 
-A Edge Function possui duas rotas:
-- GET /functions/v1/roblox-gateway/config
-- POST /functions/v1/roblox-gateway/events
+A ferramenta de conexão atual não expõe operação de gestão de Edge Function
+Secrets. Configure o segredo no Dashboard do Supabase ou pela CLI local:
 
-Ambas exigem o header x-brainrot-server-key.
-O gateway só aceita o ambiente development nesta primeira versão.
+```bash
+supabase secrets set BRAINROTFARM_ROBLOX_API_KEY=<segredo-aleatorio-forte>
+```
 
-No Roblox Creator Hub, cadastre o mesmo segredo com o nome
-BRAINROTFARM_API_KEY no armazenamento de segredos da experiência.
-Em testes locais, use Local Secrets em Experience Settings > Security.
-A chamada deve ocorrer exclusivamente em Script do servidor usando HttpService.
+Gere um segredo aleatório de pelo menos 32 bytes e não o envie no chat,
+não o comite e não o coloque em código Luau. No Roblox Creator Hub, armazene
+o mesmo valor como Secret `BRAINROTFARM_API_KEY`.
 
-Nunca coloque SUPABASE_SERVICE_ROLE_KEY, senha PostgreSQL ou a chave administrativa
-do Supabase em scripts do Roblox, LocalScripts, ReplicatedStorage ou no Git.
+## ChatGPT e Codex
+
+- ChatGPT: conexão Supabase autorizada; pode consultar e administrar este projeto
+  por meio das ferramentas conectadas.
+- Codex: conectar o MCP oficial do Supabase com escopo restrito ao project ref
+  `dhlomskkibsjnvsnvozy`. Comece em modo read-only; habilite escrita apenas
+  para migrations revisadas.
+- O repositório GitHub continua sendo a fonte versionada de código, documentação
+  e migrations. O banco guarda conhecimento consultável e estado estruturado.
+
+## Roblox Studio
+
+O Roblox poderá usar `HttpService` em Scripts do servidor, depois de configurar
+o segredo no Creator Hub. Nunca use service-role key, senha PostgreSQL ou chave
+administrativa em LocalScripts, ReplicatedStorage ou arquivos versionados.
 
 ## Segurança e limites
 
-- RLS habilitada em todas as tabelas.
-- anon e authenticated não recebem privilégios nas tabelas internas.
-- O gateway valida um segredo próprio e usa a credencial administrativa apenas
-  dentro da Edge Function.
-- Eventos aceitos não incluem UserId, nome, chat, e-mail ou dados pessoais.
-- Configurações começam com visible_to_game=false; só publicar após revisão.
-- Desenvolvimento, staging e produção devem usar projetos/segredos separados.
-- Não utilizar este banco como substituto do DataStore sem uma decisão arquitetural
+- Development usa projeto Supabase separado.
+- Staging e production ainda não foram criados.
+- `game_config.visible_to_game` permanece false por padrão; nenhum valor está
+  publicado para o jogo pelo gateway.
+- Eventos aceitos não incluem UserId, nomes, chat, e-mail ou dados pessoais.
+- Não utilizar este banco como substituto do DataStore sem decisão arquitetural
   e migração testada.
+- Não compartilhar credenciais em issues, commits, conversas ou arquivos .env.
 
-## Limitações conhecidas
+## Verificações
 
-- A migration e a Edge Function estão versionadas, mas ainda não foram aplicadas
-  nem implantadas em um projeto Supabase.
-- A integração real ChatGPT/Codex depende de autenticação do usuário.
-- A integração Roblox depende de URL, chave de desenvolvimento e configuração HTTP.
-- O armazenamento de segredos Roblox não está disponível em execução local comum;
-  configurar Local Secrets no Studio para testes.
-- A presença destes arquivos não significa que o banco já esteja provisionado.
+- Projeto criado e estado ACTIVE_HEALTHY confirmado.
+- Cinco tabelas verificadas por consulta ao catálogo PostgreSQL.
+- Nove configurações iniciais confirmadas em development.
+- Duas migrations aplicadas com sucesso.
+- Edge Function listada como ACTIVE.
+- Advisors: RLS sem políticas é intencional nesta etapa, pois os papéis públicos
+  não recebem grants; foi identificado e corrigido o índice ausente da FK
+  `supersedes_id`. Índices recém-criados podem aparecer como ainda não usados
+  até haver volume de consultas.
+- Não foram executados testes de integração Roblox nem chamadas autenticadas
+  ao gateway, pois o segredo ainda não foi configurado.
