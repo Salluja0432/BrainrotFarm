@@ -58,6 +58,7 @@ Repositório privado da conta Salluja0432. Não tornar público sem decisão exp
 
 A fundação Supabase está versionada em [supabase/](supabase/):
 - [Arquitetura e regras de integração](docs/BANCO_COMPARTILHADO_SUPABASE.md)
+- [Conectar Codex ao Supabase](docs/CODEX_SUPABASE.md)
 - [Migration inicial PostgreSQL](supabase/migrations/20261116000100_brainrot_shared_database.sql)
 - [Edge Function para Roblox](supabase/functions/roblox-gateway/index.ts)
 - [Instruções de configuração](supabase/README.md)
