@@ -64,3 +64,12 @@ Ao concluir, informe resumo, arquivos alterados/criados, testes e resultados, te
 - A Edge Function atual está limitada a development; não habilite staging/production sem projetos e segredos separados, revisão e testes.
 - Não torne game_config visível ao jogo sem revisão explícita; visible_to_game deve permanecer false por padrão.
 - Não armazene UserId, nomes, chat ou outros dados pessoais em game_events.
+
+
+## Codex e Supabase MCP
+- A configuração de projeto fica em `.codex/config.toml` e aponta somente para o Supabase BrainrotFarm Dev (`dhlomskkibsjnvsnvozy`).
+- A configuração inicial usa `read_only=true` e grupos `database,docs`; não remova essa restrição sem decisão explícita e revisão de segurança.
+- Leia `docs/CODEX_SUPABASE.md` para autenticação OAuth e teste de conexão.
+- Configurações MCP de projeto só devem ser aceitas depois de o usuário confiar explicitamente neste repositório.
+- Nunca grave OAuth tokens, senhas, chaves Supabase ou segredos de jogo em arquivos versionados.
+- Não use MCP para conectar a projetos Supabase de produção.
