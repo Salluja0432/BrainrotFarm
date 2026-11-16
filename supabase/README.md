@@ -39,8 +39,9 @@ conectadas e pela Edge Function no servidor.
 
 1. `20261116000100_brainrot_shared_database.sql`
 2. `20261116000200_index_decision_supersedes.sql`
+3. `20261116000300_seed_shared_project_knowledge.sql`
 
-As duas foram aplicadas ao projeto de desenvolvimento. Mantenha futuras
+As três foram aplicadas ao projeto de desenvolvimento. O estado verificado contém cinco notas, quatro decisões e nove configurações iniciais. Mantenha futuras
 alterações versionadas em `supabase/migrations/` e aplique-as somente após
 revisão.
 
@@ -70,11 +71,11 @@ o mesmo valor como Secret `BRAINROTFARM_API_KEY`.
 
 ## ChatGPT e Codex
 
-- ChatGPT: conexão Supabase autorizada; pode consultar e administrar este projeto
-  por meio das ferramentas conectadas.
-- Codex: conectar o MCP oficial do Supabase com escopo restrito ao project ref
-  `dhlomskkibsjnvsnvozy`. Comece em modo read-only; habilite escrita apenas
-  para migrations revisadas.
+- ChatGPT: conexão Supabase autorizada; consultas reais ao banco foram executadas.
+- Codex: configuração MCP oficial já versionada em `.codex/config.toml`, restrita
+  ao project ref `dhlomskkibsjnvsnvozy`, com `read_only=true` e grupos `database,docs`.
+  Falta o usuário confiar no repositório e concluir OAuth local com `codex mcp login supabase`.
+- Guia: `docs/CODEX_SUPABASE.md`.
 - O repositório GitHub continua sendo a fonte versionada de código, documentação
   e migrations. O banco guarda conhecimento consultável e estado estruturado.
 
