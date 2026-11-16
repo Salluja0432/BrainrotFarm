@@ -1,0 +1,4 @@
+[functions.roblox-gateway]
+# A função valida o segredo próprio em x-brainrot-server-key.
+# Não desabilite a autenticação sem manter essa validação dentro da função.
+verify_jwt = false
