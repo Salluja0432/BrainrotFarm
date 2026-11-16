@@ -63,3 +63,9 @@ A fundação Supabase está versionada em [supabase/](supabase/):
 - [Instruções de configuração](supabase/README.md)
 
 **Estado:** especificação e arquivos criados no GitHub. O projeto Supabase ainda precisa ser criado/conectado, a migration aplicada e a Edge Function implantada. Não há banco remoto provisionado nesta etapa. O Roblox DataStore continua responsável pelos saves dos jogadores.
+
+
+## Codex ↔ Supabase
+- Configuração MCP restrita e somente leitura: [`.codex/config.toml`](.codex/config.toml)
+- Passos de autenticação e verificação: [docs/CODEX_SUPABASE.md](docs/CODEX_SUPABASE.md)
+- O Codex precisa confiar neste repositório e concluir OAuth localmente; o arquivo versionado não autentica a conta sozinho.
