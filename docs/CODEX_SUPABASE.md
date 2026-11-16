@@ -88,3 +88,55 @@ Resultados esperados:
 - Não conecte MCP a Supabase de produção.
 - Nunca cole tokens OAuth, senhas, service-role keys ou segredos em prompts/commits.
 - Para liberar escrita futuramente, exija revisão específica e preserve migrations no GitHub.
+
+
+## Solução de problemas: documentos ausentes e ferramentas MCP
+
+### Os documentos não aparecem na pasta local
+
+O repositório GitHub `Salluja0432/BrainrotFarm` contém atualmente documentação,
+migrations e integração Supabase. A cópia local original em
+`C:\\Users\\Archie\\Downloads\\BrainrotFarm` é a pasta do protótipo
+Luau e não deve ser presumida como clone Git do repositório de documentação.
+
+Verifique sem alterar nada:
+
+```powershell
+cd C:\\Users\\Archie\\Downloads\\BrainrotFarm
+Test-Path .git
+Test-Path .\\AGENTS.md
+Test-Path .\\docs\\BANCO_COMPARTILHADO_SUPABASE.md
+git remote -v
+```
+
+Se `.git` e os documentos retornarem `False`, **não execute `git pull` nessa
+pasta**. Preserve o protótipo e clone o repositório de documentação em uma pasta
+vizinha:
+
+```powershell
+cd C:\\Users\\Archie\\Downloads
+git clone https://github.com/Salluja0432/BrainrotFarm.git BrainrotFarm-Control
+```
+
+Abra `C:\\Users\\Archie\\Downloads\\BrainrotFarm-Control` no Codex.
+Esse clone tem a documentação e a configuração MCP, mas ainda não contém os
+scripts-fonte Luau do protótipo original. Não confunda as duas pastas. A futura
+consolidação do código no repositório deve ser feita com revisão e backup.
+
+### O comando lista o servidor, mas a sessão não mostra ferramentas
+
+`codex mcp list` confirma cadastro e estado de autenticação na configuração;
+não prova, sozinho, que o servidor iniciou e anunciou ferramentas na sessão
+atual do agente.
+
+1. Feche completamente o Codex desktop e abra novamente.
+2. Em Settings > MCP servers, confirme que `supabase` está habilitado e autenticado.
+3. Abra uma sessão local com o clone `BrainrotFarm-Control`, não uma sessão remota/cloud.
+4. No terminal, execute `codex` e dentro da TUI use `/mcp`.
+5. Confira se `supabase` aparece conectado e se há ferramentas disponíveis.
+6. Se continuar sem ferramentas, verifique a mensagem de inicialização/erro do
+   servidor na tela MCP antes de alterar a configuração.
+
+O Codex desktop e a CLI compartilham a configuração local MCP, mas o ChatGPT web
+não lê arquivos locais `~/.codex`. Ferramentas MCP locais também não devem ser
+presumidas disponíveis numa sessão cloud/remote.
