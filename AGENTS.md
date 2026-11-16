@@ -51,3 +51,16 @@ Consulte docs/ECONOMIA.md. O cálculo correto é renda esperada de 12,85 moedas/
 
 ## Relatório obrigatório
 Ao concluir, informe resumo, arquivos alterados/criados, testes e resultados, testes não executados, limitações, riscos e decisões que dependem do responsável.
+
+
+## Banco compartilhado Supabase
+- Leia docs/BANCO_COMPARTILHADO_SUPABASE.md antes de alterar SQL, Edge Functions ou integração HTTP.
+- Mantenha migrations versionadas em supabase/migrations; nunca faça alterações manuais não registradas no Git.
+- Não coloque credenciais, connection strings, publishable/secret keys ou tokens em commits.
+- Não exponha tabelas internas a anon/authenticated; preserve RLS e grants restritos.
+- Roblox acessa apenas Edge Functions pelo servidor usando HttpService e Roblox Secrets Store.
+- Nunca coloque service_role ou senha do PostgreSQL em Luau, LocalScripts, ReplicatedStorage ou arquivos versionados.
+- Até uma decisão de migração aprovada, Roblox DataStore continua fonte de verdade para saldo, inventário e progresso de jogadores.
+- A Edge Function atual está limitada a development; não habilite staging/production sem projetos e segredos separados, revisão e testes.
+- Não torne game_config visível ao jogo sem revisão explícita; visible_to_game deve permanecer false por padrão.
+- Não armazene UserId, nomes, chat ou outros dados pessoais em game_events.
