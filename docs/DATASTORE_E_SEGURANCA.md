@@ -3,6 +3,22 @@
 ## Objetivo
 Proteger moedas, inventário, criaturas posicionadas e sessões contra duplicação, perda e sobrescrita concorrente.
 
+## Contrato de validação de dados — Fase 1
+
+O `DataManager.validData` aplica validação estrutural antes de adquirir uma sessão e novamente antes de persistir o snapshot em memória.
+
+- Números de saldo, timestamps e heartbeat precisam ser finitos e não negativos. `revision`, índices de listas e índices de slots precisam ser inteiros válidos.
+- Inventário precisa ser uma lista densa, indexada a partir de 1, sem chaves extras ou buracos; cada elemento deve corresponder a uma criatura registrada em `Config`.
+- `placed` aceita apenas índices entre 1 e `Config.MaxSlots`; cada slot presente precisa estar vazio ou conter uma criatura registrada. Slots ausentes em saves legados são preenchidos com string vazia durante o carregamento.
+- `version` ausente é o formato legado atualmente suportado. `Config.DataVersion` é a versão corrente. Qualquer versão explícita diferente da corrente é bloqueada até existir migração específica.
+- Em saves legados, `revision`, `lastSeen` e `lastOfflineClaim` podem estar ausentes; a lógica de carregamento existente fornece os valores de compatibilidade.
+- Sessão persistida, quando presente, exige ID não vazio e heartbeat finito e não negativo.
+- Registros inválidos ou com versão não suportada não são substituídos por dados iniciais. A transformação de `UpdateAsync` retorna `nil` para cancelar a gravação, preservando o valor existente.
+- O snapshot em memória é validado antes de ser enviado ao DataStore. Se estiver inválido, a sessão é invalidada e o salvamento é cancelado.
+- A renda percorre somente os seis índices permitidos, nunca valores adicionais fora da base.
+
+Não foi criado limite numérico de itens no inventário nesta etapa. O limite de produto precisa ser decidido separadamente; o registro completo também deve respeitar o limite de tamanho de objeto do DataStore.
+
 ## Estado reportado na Fase 1
 O Codex informou:
 - Session ID JobId + GUID.

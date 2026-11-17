@@ -14,7 +14,7 @@ Para cada execução, registrar data/hora, commit, ferramentas/versões, ambient
 | JSON de `roblox/default.project.json` | Passou | Parse estático executado. |
 | Caminhos `$path` do Rojo | Passou | `src/shared`, `src/server`, `src/client` existem dentro de `roblox/`. |
 | `git diff --check` | Passou | Executado após as alterações. |
-| Build Rojo reproduzível e rastreável | **Pendente** | O histórico registra um build anterior concluído com `rojo --version` 7.7.1; não há log que vincule essa versão ao `.rbxlx` aberto. `rojo`/`rokit` não estavam no `PATH` durante a auditoria de 17/11/2026. |
+| Build Rojo reproduzível e rastreável | **Pendente** | O histórico registra um build anterior concluído com `rojo --version` 7.7.1; não há log que vincule essa versão ao `.rbxlx` aberto. |
 | Abrir o `.rbxlx` gerado no Roblox Studio | **Pendente** | Depende do build e do Studio. |
 | Execução/validação funcional | **Pendente** | Nenhum cenário funcional executado. |
 
@@ -37,6 +37,19 @@ Todos os cenários abaixo permanecem pendentes até execução e registro de evi
 | F1-11 | Personagem ausente/morto | Roubo/retirada recusado sem corromper estado | Dois clientes |
 | F1-12 | Desconexão durante roubo | Nenhuma criatura duplicada; resultado recuperável/documentado | Dois clientes + falhas |
 
+## Validação de dados — novos cenários
+
+Os casos abaixo foram adicionados ao plano, mas ainda precisam de harness/teste controlado no ambiente Roblox:
+
+| ID | Cenário | Resultado esperado |
+|---|---|---|
+| F1-13 | `coins` NaN, infinito ou negativo | Registro rejeitado sem sobrescrita |
+| F1-14 | Inventário com buraco, chave extra ou criatura inválida | Registro rejeitado sem sobrescrita |
+| F1-15 | Slot fora do intervalo ou valor inválido | Registro rejeitado; renda limitada aos seis slots |
+| F1-16 | Saves legados sem `version` e com slots ausentes | Carregamento compatível; slots ausentes preenchidos vazios |
+| F1-17 | Versão explícita desconhecida/futura | Carregamento bloqueado; registro preservado |
+| F1-18 | Dados em memória inválidos antes do save | Save cancelado e sessão invalidada |
+
 ## Isolamento obrigatório
 Executar testes somente em uma experiência Roblox separada e com um nome de DataStore exclusivo para desenvolvimento. Não habilitar Studio Access to API Services contra dados reais de jogadores. Veja [Configuração de Roblox Studio e Rojo](ROBLOX_STUDIO_E_ROJO.md).
 
@@ -53,7 +66,7 @@ Executar testes somente em uma experiência Roblox separada e com um nome de Dat
 Primeira sessão; desktop em resoluções distintas; celular; tablet/console; inventário cheio; base cheia; proteção e cooldown; mensagens de DataStore; seleção de item raro.
 
 ## Ferramentas e limitações
-Na auditoria de 17/11/2026, `rojo` e `rokit` não estavam disponíveis no `PATH`; Luau e Luau Analyzer também não foram executados. O histórico do projeto registra um build Rojo anterior concluído com a versão 7.7.1, mas sem proveniência que o vincule ao artefato atualmente aberto. A integração do snapshot confirmou cópia, hashes, JSON, caminhos e whitespace do diff; ver [docs/ROBLOX_STUDIO_E_ROJO.md](ROBLOX_STUDIO_E_ROJO.md) para os limites dessa evidência.
+Na auditoria de 17/11/2026, Luau e Luau Analyzer não foram executados. A validação desta branch foi somente por revisão estática do diff; nenhum teste de Roblox Studio, DataStore ou build foi executado. O código alterado precisa ser compilado/analisado e testado na máquina com Roblox Studio antes de ser considerado aprovado.
 
 ## Gate de Fase 1
 Aprovar somente após revisão dos arquivos atuais, build Rojo com versão registrada, casos de Studio e DataStore de desenvolvimento executados, concorrência/falhas avaliadas e riscos residuais documentados.

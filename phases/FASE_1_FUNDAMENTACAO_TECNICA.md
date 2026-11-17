@@ -1,7 +1,7 @@
 # Fase 1 — Fundamentação técnica
 
 **Status:** código integrado e revisão estática realizada; validação funcional pendente. Não aprovada para publicação.
-**Última atualização documental:** 2026-11-16.
+**Última atualização documental:** 2026-11-17.
 
 ## Escopo
 - 100 moedas e Gatomelo para novos jogadores.
@@ -24,7 +24,7 @@ Em 2026-11-16, os arquivos atuais da pasta local original do projeto Roblox fora
 - `roblox/src/server/DataManager.luau`
 - `roblox/src/client/Main.client.luau`
 
-Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e coincidem. O arquivo Rojo foi parseado como JSON e seus três caminhos existem. Não foram feitas alterações aos scripts.
+Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e coincidem. O arquivo Rojo foi parseado como JSON e seus três caminhos existem. Não foram feitas alterações aos scripts durante a integração original; esta branch propõe uma alteração localizada no `DataManager.luau`.
 
 ## Revisão estática reportada no código
 - Session ID JobId + GUID.
@@ -37,25 +37,37 @@ Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e co
 - Roubo em memória sem yield entre remoção do slot e inserção no inventário.
 - Cálculo econômico corrigido.
 
-A existência desses mecanismos no código e a cópia byte a byte não comprovam que funcionem corretamente em Roblox.
+## Alteração proposta nesta branch — validação estrita
+- Rejeitar NaN, infinitos e números negativos em saldo/timestamps/heartbeat.
+- Exigir revisão inteira não negativa.
+- Exigir inventário denso, sem chaves extras, contendo apenas criaturas de `Config`.
+- Aceitar apenas slots válidos até `Config.MaxSlots`; preencher slots ausentes de saves legados com string vazia.
+- Aceitar saves antigos sem `version` e normalizá-los para a versão atual no carregamento.
+- Bloquear versões explícitas desconhecidas sem regravar o registro.
+- Validar novamente os dados em memória antes de salvar.
+- Cancelar transformações de `UpdateAsync` com retorno `nil` quando o registro é inválido ou pertence a outra sessão.
+- Calcular renda apenas pelos índices de slots configurados.
+
+A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os casos pendentes.
 
 ## Riscos
-- Sem transação atômica entre chaves de dois jogadores; roubo pode ficar inconsistente em crash entre gravações.
+- Sem transação atômica entre chaves DataStore de dois jogadores; roubo pode ficar inconsistente em crash entre gravações.
 - Chamada DataStore pendurada não pode ser cancelada.
 - Lease, throttling, resultados ambíguos, liberação e shutdown não foram validados em Roblox.
 - Nenhum teste funcional de Studio/servidor publicado foi executado nesta integração.
+- A alteração de validação precisa de teste controlado com saves legados representativos antes de adoção na branch principal.
 
-## Testes e validações desta integração
-- SHA-256 dos cinco arquivos de origem/destino: correspondentes.
+## Testes e validações
+- SHA-256 dos cinco arquivos de origem/destino: correspondentes na integração original.
 - JSON de `roblox/default.project.json`: válido.
 - Caminhos `src/shared`, `src/server` e `src/client`: presentes.
-- `git diff --check`: resultado registrado no relatório desta integração.
-- Build Rojo, análise Luau e Roblox Studio: **não executados**.
-- Ver [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os testes funcionais pendentes.
+- Build Rojo, análise Luau, execução de Studio e DataStore: **não executados nesta branch**.
+- Ver [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para o plano atualizado.
 
 ## Critérios de saída
 - [x] Arquivos atuais revisados diretamente e snapshot integrado.
 - [x] Hashes dos arquivos copiados e estrutura JSON/path verificados.
+- [ ] Validação estrita de saves legados com fixtures representativas.
 - [ ] Build Rojo com versão registrada.
 - [ ] Análise/sintaxe Luau executada.
 - [ ] Primeiro acesso e retorno aprovados em DataStore de desenvolvimento.

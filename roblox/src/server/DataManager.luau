@@ -19,27 +19,99 @@ local function defaultData()
 	}
 end
 
+local function isFiniteNumber(value)
+	return typeof(value) == "number"
+		and value == value
+		and value > -math.huge
+		and value < math.huge
+end
+
+local function isNonNegativeFiniteNumber(value)
+	return isFiniteNumber(value) and value >= 0
+end
+
+local function isNonNegativeInteger(value)
+	return isNonNegativeFiniteNumber(value) and value % 1 == 0
+end
+
+local function isCreatureName(value)
+	return typeof(value) == "string" and Config.info(value) ~= nil
+end
+
 local function validData(data)
-	if typeof(data) ~= "table" or typeof(data.coins) ~= "number" or data.coins < 0
-		or typeof(data.inventory) ~= "table" or typeof(data.placed) ~= "table"
-		or (data.lastOfflineClaim ~= nil and typeof(data.lastOfflineClaim) ~= "number")
-		or (data.lastSeen ~= nil and typeof(data.lastSeen) ~= "number")
-		or (data.revision ~= nil and (typeof(data.revision) ~= "number" or data.revision < 0))
+	if typeof(data) ~= "table"
+		or not isNonNegativeFiniteNumber(data.coins)
+		or typeof(data.inventory) ~= "table"
+		or typeof(data.placed) ~= "table"
+		or (data.version ~= nil and data.version ~= Config.DataVersion)
+		or (data.lastOfflineClaim ~= nil and not isNonNegativeFiniteNumber(data.lastOfflineClaim))
+		or (data.lastSeen ~= nil and not isNonNegativeFiniteNumber(data.lastSeen))
+		or (data.revision ~= nil and not isNonNegativeInteger(data.revision))
+		or (data.lastReleasedSession ~= nil
+			and (typeof(data.lastReleasedSession) ~= "string" or data.lastReleasedSession == ""))
+		or (data.shieldUntil ~= nil and not isNonNegativeFiniteNumber(data.shieldUntil))
 		or (data.session ~= nil and (typeof(data.session) ~= "table"
-			or typeof(data.session.id) ~= "string" or typeof(data.session.heartbeat) ~= "number")) then
+			or typeof(data.session.id) ~= "string" or data.session.id == ""
+			or not isNonNegativeFiniteNumber(data.session.heartbeat))) then
 		return false
 	end
-	for _, name in data.inventory do
-		if typeof(name) ~= "string" or not Config.info(name) then
+
+	-- Version-less records are the supported legacy format. Any explicit version
+	-- other than Config.DataVersion is rejected until a migration is implemented.
+	local allowedFields = {
+		coins = true,
+		inventory = true,
+		placed = true,
+		lastOfflineClaim = true,
+		lastSeen = true,
+		version = true,
+		revision = true,
+		session = true,
+		lastReleasedSession = true,
+		shieldUntil = true,
+	}
+	for key in data do
+		if typeof(key) ~= "string" or not allowedFields[key] then
 			return false
 		end
 	end
-	for i = 1, Config.MaxSlots do
-		local name = data.placed[i]
-		if name ~= nil and name ~= "" and (typeof(name) ~= "string" or not Config.info(name)) then
+
+	if data.session then
+		for key in data.session do
+			if key ~= "id" and key ~= "heartbeat" then
+				return false
+			end
+		end
+	end
+
+	-- Inventory is a dense, one-based array. Sparse entries, dictionary keys,
+	-- invalid creature names, and extra keys are rejected instead of being lost.
+	local inventoryCount = 0
+	local highestInventoryIndex = 0
+	for index, name in data.inventory do
+		if not isNonNegativeInteger(index) or index < 1 or not isCreatureName(name) then
+			return false
+		end
+		inventoryCount += 1
+		if index > highestInventoryIndex then
+			highestInventoryIndex = index
+		end
+	end
+	if highestInventoryIndex ~= inventoryCount then
+		return false
+	end
+
+	-- Legacy saves may omit some of the six slot indexes; load() fills those
+	-- missing indexes with empty strings. Keys outside the supported range fail.
+	for index, name in data.placed do
+		if not isNonNegativeInteger(index) or index < 1 or index > Config.MaxSlots then
+			return false
+		end
+		if name ~= "" and not isCreatureName(name) then
 			return false
 		end
 	end
+
 	return true
 end
 
@@ -90,14 +162,14 @@ function DataManager.load(player)
 			-- UpdateAsync may call this callback repeatedly. It performs only deterministic
 			-- calculations and returns a value; it never yields or mutates external state.
 			if old ~= nil and not validData(old) then
-				return old
+				return nil -- Preserve malformed or unsupported-version records unchanged.
 			end
-			if old and old.session and old.session.id ~= "" and old.session.id ~= sessionId
+			if old and old.session and old.session.id ~= sessionId
 				and operationNow - old.session.heartbeat < Config.SessionLockTimeout then
-				return old
+				return nil -- Another active session owns this key.
 			end
 			if old and old.session and old.session.id == sessionId then
-				return old -- idempotent recovery after an unknown response
+				return old -- Idempotent recovery after an unknown response.
 			end
 
 			local data = old and table.clone(old) or defaultData()
@@ -133,7 +205,7 @@ function DataManager.load(player)
 		return nil, "Lease expirou antes da confirmação local"
 	end
 
-	result.session = nil -- the lock remains only in the stored record
+	result.session = nil -- The lock remains only in the stored record.
 	result.shieldUntil = 0
 	sessions[player] = {
 		data = result,
@@ -163,8 +235,9 @@ end
 
 function DataManager.income(data)
 	local total = 0
-	for _, name in data.placed do
-		if name ~= "" then
+	for index = 1, Config.MaxSlots do
+		local name = data.placed[index]
+		if name ~= nil and name ~= "" then
 			local _, rarity = Config.info(name)
 			if rarity then
 				total += rarity.income
@@ -187,6 +260,12 @@ function DataManager.save(player, releaseSession)
 	end
 	session.busy = true
 
+	if not validData(session.data) then
+		session.busy = false
+		markLost(player, session, "Dados em memória inválidos; salvamento cancelado")
+		return false
+	end
+
 	local key = "u_" .. player.UserId
 	local sessionId = session.id
 	local snapshot = dataPayload(session.data)
@@ -195,8 +274,8 @@ function DataManager.save(player, releaseSession)
 		operationNow = os.time()
 		return store:UpdateAsync(key, function(old)
 			-- Pure callback: no yielding, notifications, cache mutation, or side effects.
-			if not old or not old.session or old.session.id ~= sessionId then
-				return old
+			if not old or not validData(old) or not old.session or old.session.id ~= sessionId then
+				return nil -- Never overwrite a missing, malformed, or differently-owned record.
 			end
 			local nextData = table.clone(snapshot)
 			nextData.revision = (old.revision or 0) + 1
@@ -214,7 +293,7 @@ function DataManager.save(player, releaseSession)
 
 	local ownsResult = ok and result ~= nil and result.lastReleasedSession == sessionId
 	if not releaseSession and ok and result and result.session and result.session.id == sessionId
-		and typeof(result.session.heartbeat) == "number" then
+		and isNonNegativeFiniteNumber(result.session.heartbeat) then
 		ownsResult = true
 	end
 	local confirmedAge = 0
