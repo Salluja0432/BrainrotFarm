@@ -48,6 +48,7 @@ Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e co
 - Cancelar transformações de `UpdateAsync` com retorno `nil` quando o registro é inválido ou pertence a outra sessão.
 - Reconhecer uma liberação já persistida em tentativas repetidas após resposta ambígua, sem substituir lock de sessão posterior.
 - Verificar resultados ainda ambíguos por uma leitura backend sem cache, exigindo evidência específica de aquisição, save ou liberação antes de confirmar sucesso.
+- Repetir somente categorias reconhecidas de falhas transitórias de DataStore; confirmar os marcadores de erro reais em testes de desenvolvimento.
 - Calcular renda apenas pelos índices de slots configurados.
 
 A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os casos pendentes.

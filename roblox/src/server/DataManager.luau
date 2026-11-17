@@ -118,6 +118,29 @@ local function validData(data)
 	return true
 end
 
+local function isRetryableDataStoreError(reason)
+	local message = string.lower(tostring(reason))
+	local retryableMarkers = {
+		"throttle",
+		"datastorethrottled",
+		"keythrottled",
+		"internalservererror",
+		"requestrejected",
+		"updateasyncthrottle",
+		"transformthrottle",
+		"501:",
+		"502:",
+		"503:",
+		"504:",
+	}
+	for _, marker in retryableMarkers do
+		if string.find(message, marker, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
 local function retry(operation)
 	local lastError
 	for attempt = 1, Config.DataStoreMaxAttempts do
@@ -126,6 +149,9 @@ local function retry(operation)
 			return true, result
 		end
 		lastError = result
+		if not isRetryableDataStoreError(lastError) then
+			return false, lastError
+		end
 		if attempt < Config.DataStoreMaxAttempts then
 			local backoff = math.min(Config.DataStoreRetryDelay * (2 ^ (attempt - 1)), Config.DataStoreRetryMaxDelay)
 			task.wait(backoff + math.random() * Config.DataStoreRetryJitter)

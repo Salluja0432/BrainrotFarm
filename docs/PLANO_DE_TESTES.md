@@ -54,6 +54,7 @@ Os casos abaixo foram adicionados ao plano, mas ainda precisam de harness/teste 
 | F1-21 | Resposta ambígua ao adquirir sessão | Leitura sem cache confirma somente o mesmo ID de sessão; caso contrário, entrada bloqueada |
 | F1-22 | Resposta ambígua ao salvar | Leitura sem cache confirma somente revisão avançada e payload correspondente |
 | F1-23 | Resposta ambígua ao liberar | Leitura sem cache confirma somente `lastReleasedSession` da sessão liberada |
+| F1-24 | Classificação de erros DataStore | Throttling/erros transitórios recebem backoff; erros permanentes ou desconhecidos não são repetidos |
 
 ## Isolamento obrigatório
 Executar testes somente em uma experiência Roblox separada e com um nome de DataStore exclusivo para desenvolvimento. Não habilitar Studio Access to API Services contra dados reais de jogadores. Veja [Configuração de Roblox Studio e Rojo](ROBLOX_STUDIO_E_ROJO.md).
