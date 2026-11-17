@@ -1,6 +1,6 @@
 # Brainrot Farm
 
-Projeto de experiência Roblox em desenvolvimento. Este repositório centraliza a documentação de produto, decisões técnicas, auditorias, testes e planejamento. O código-fonte será incorporado quando a versão local atualizada da Fase 1 for conferida.
+Projeto de experiência Roblox em desenvolvimento. Este repositório centraliza o código-fonte Roblox, documentação de produto, decisões técnicas, auditorias, testes e planejamento.
 
 ## Visão geral
 
@@ -8,8 +8,8 @@ Brainrot Farm é um conceito original de simulador de coleção e administraçã
 
 ## Estado atual
 
-- **Protótipo inicial:** projeto Luau organizado com Rojo, enviado originalmente como BrainrotFarm.zip.
-- **Fase 1 — fundamentação técnica:** o Codex relatou implementação e revisão estática. A implementação ainda não foi validada em execução no Roblox Studio.
+- **Código-fonte Roblox:** integrado em [`roblox/`](roblox/), estruturado como projeto Rojo. Os scripts são um snapshot da pasta original `BrainrotFarm`, que não tinha histórico Git próprio.
+- **Fase 1 — fundamentação técnica:** código integrado e inspecionado estaticamente; **não foi executado nem validado funcionalmente no Roblox Studio**.
 - **Fase 2:** não iniciada.
 - **Publicação:** não autorizada nem preparada.
 
@@ -22,6 +22,7 @@ Brainrot Farm é um conceito original de simulador de coleção e administraçã
 - [Auditoria técnica](docs/AUDITORIA_TECNICA.md)
 - [Economia](docs/ECONOMIA.md)
 - [DataStore e segurança](docs/DATASTORE_E_SEGURANCA.md)
+- [Configuração de Roblox Studio e Rojo](docs/ROBLOX_STUDIO_E_ROJO.md)
 - [Plano de testes](docs/PLANO_DE_TESTES.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Monetização](docs/MONETIZACAO.md)
@@ -49,10 +50,9 @@ Brainrot Farm é um conceito original de simulador de coleção e administraçã
 
 ## Status de validação
 
-Este repositório começa como **documentação do projeto**. A presença de uma decisão ou descrição aqui não prova que a funcionalidade exista no código ou funcione no Roblox. Cada afirmação de implementação deve apontar para o código e evidência de teste.
+A presença do código em `roblox/` confirma a integração dos arquivos, não que o jogo funcione. A comparação SHA-256 e a validação estática do mapeamento Rojo foram executadas; build Rojo, análise Luau e testes funcionais no Studio continuam pendentes.
 
 Repositório privado da conta Salluja0432. Não tornar público sem decisão explícita.
-
 
 ## Banco compartilhado
 
@@ -63,10 +63,14 @@ A fundação Supabase está versionada em [supabase/](supabase/):
 - [Edge Function para Roblox](supabase/functions/roblox-gateway/index.ts)
 - [Instruções de configuração](supabase/README.md)
 
-**Estado:** especificação e arquivos criados no GitHub. O projeto Supabase ainda precisa ser criado/conectado, a migration aplicada e a Edge Function implantada. Não há banco remoto provisionado nesta etapa. O Roblox DataStore continua responsável pelos saves dos jogadores.
+**Estado do ambiente (16/11/2026):** o projeto de desenvolvimento **Brainrot Farm Dev** está provisionado e ativo na região `sa-east-1` (São Paulo). As três migrations foram aplicadas, as cinco tabelas compartilhadas estão criadas e protegidas por RLS, e a Edge Function `roblox-gateway` está implantada e ativa.
 
+- **Funcionando:** ChatGPT utiliza a integração Supabase conectada ao projeto. Codex CLI utiliza o MCP oficial do Supabase, com configuração local `read_only=true`. O Supabase é destinado ao conhecimento compartilhado dos agentes, decisões, configurações publicadas explicitamente e telemetria controlada.
+- **Implantado, aguardando configuração segura:** o gateway ainda não pode autenticar chamadas Roblox porque o segredo `BRAINROTFARM_ROBLOX_API_KEY` não foi configurado. Ele deve permanecer sem acesso funcional até a configuração segura do segredo.
+- **Ainda não integrado ao jogo:** Roblox Studio não está conectado ao gateway e os scripts Luau atuais não fazem requisições ao Supabase nem enviam dados de jogadores. Roblox DataStore continua sendo a fonte de verdade para moedas, inventário, criaturas e progresso dos jogadores.
 
 ## Codex ↔ Supabase
+
 - Configuração MCP restrita e somente leitura: [`.codex/config.toml`](.codex/config.toml)
 - Passos de autenticação e verificação: [docs/CODEX_SUPABASE.md](docs/CODEX_SUPABASE.md)
 - O Codex precisa confiar neste repositório e concluir OAuth localmente; o arquivo versionado não autentica a conta sozinho.

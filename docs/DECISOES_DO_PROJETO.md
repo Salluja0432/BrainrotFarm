@@ -5,10 +5,20 @@
 - **Motivo:** centralizar código, documentação, histórico, testes e contexto para Codex/ChatGPT.
 - **Consequência:** não tornar público sem autorização.
 
+## 2026-11-16 — Código Roblox mantido em `roblox/`
+- **Decisão:** manter `default.project.json` e a árvore `src/` do projeto Rojo sob `roblox/`.
+- **Motivo:** separar a árvore de instâncias Roblox da documentação, configurações MCP e infraestrutura Supabase na raiz.
+- **Consequência:** comandos Rojo e caminhos `$path` são executados/resolvidos a partir de `roblox/`; o código do jogo não passa a chamar Supabase.
+
+## 2026-11-16 — Integração como snapshot da origem local
+- **Decisão:** copiar os cinco arquivos atuais de `C:\Users\Archie\Downloads\BrainrotFarm` sem importar histórico Git.
+- **Motivo:** a pasta de origem não possui repositório Git próprio; a branch `main` de BrainrotFarm-Control permanece a linha de histórico.
+- **Consequência:** hashes SHA-256 foram comparados nesta integração; a cópia não representa commits anteriores e não prova validação funcional.
+
 ## 2026-11-16 — Documentação antes do código
 - **Decisão:** criar documentação primeiro; não importar ZIP antigo como código atual.
 - **Motivo:** a Fase 1 foi alterada localmente, mas os arquivos atuais não foram anexados para revisão.
-- **Consequência:** este repositório documenta a implementação relatada, ainda sem fonte Luau atual.
+- **Consequência:** decisão histórica. O snapshot atual foi integrado depois de revisão prévia aprovada; os testes Roblox continuam pendentes.
 
 ## 2026-11-16 — Economia de referência
 - **Decisão:** renda esperada 12,85 moedas/s, venda esperada 128,50 e lucro esperado 28,50 por ovo.

@@ -3,59 +3,56 @@
 **Data de referência:** 2026-11-16.
 
 ## Escopo de evidência
-O ZIP BrainrotFarm.zip foi inspecionado anteriormente. A auditoria inicial descreveu quatro scripts Luau, default.project.json e LEIA-ME.md. Depois, o Codex relatou alterações locais em arquivos do Windows. O conteúdo atualizado ainda não foi sincronizado para este repositório.
+O código-fonte Roblox atual foi integrado em `roblox/` a partir de `C:\Users\Archie\Downloads\BrainrotFarm`. A origem não tinha histórico Git próprio; os arquivos foram importados como snapshot.
 
-Assim:
-- A estrutura abaixo descreve o protótipo inicial e os relatórios recebidos.
-- As alterações da Fase 1 são relatadas pelo Codex, não verificadas diretamente aqui.
-- Este repositório começa como documentação e ainda não contém o código-fonte atual.
+A inspeção confirmou os arquivos e sua correspondência byte a byte com a origem. O projeto Rojo foi validado estruturalmente, mas build Rojo, análise Luau e execução no Roblox Studio ainda não foram realizados. Portanto, integração de código não equivale a validação funcional.
 
-## Estrutura inicial descrita
-- src/client/Main.client.luau — HUD, botões e notificações.
-- src/server/Main.server.luau — bases, ações, renda, prompts e ciclo de jogadores.
-- src/server/DataManager.luau — carregamento, cache, salvamento e renda.
-- src/shared/Config.luau — parâmetros, raridades e criaturas.
-- default.project.json — mapeamento Rojo.
-- LEIA-ME.md — setup, teste e publicação inicial.
+## Estrutura atual
+- `roblox/src/client/Main.client.luau` — HUD, botões e notificações.
+- `roblox/src/server/Main.server.luau` — bases, ações, renda, prompts e ciclo de jogadores.
+- `roblox/src/server/DataManager.luau` — carregamento, sessão, cache, salvamento e renda offline.
+- `roblox/src/shared/Config.luau` — parâmetros, raridades, criaturas e métricas econômicas.
+- `roblox/default.project.json` — mapeamento Rojo.
+- `docs/ROBLOX_STUDIO_E_ROJO.md` — guia de configuração e uso.
 
-## Mapeamento Rojo inicial
-- ReplicatedStorage.Shared ← src/shared
-- ServerScriptService.Server ← src/server
-- StarterPlayer.StarterPlayerScripts.Client ← src/client
+## Mapeamento Rojo
+- `ReplicatedStorage.Shared` ← `roblox/src/shared`
+- `ServerScriptService.Server` ← `roblox/src/server`
+- `StarterPlayer.StarterPlayerScripts.Client` ← `roblox/src/client`
 
-## Ferramentas
-Roblox Studio, Luau, Rojo, Git/GitHub e Codex. Versões exatas de Rojo/Rokit/Luau ainda precisam ser registradas.
+## Tecnologias e dependências
+Roblox Studio, Luau, Rojo, Git/GitHub e Codex. Nenhum gerenciador de dependências ou manifesto Rojo foi importado. Rojo CLI, Rokit, Luau e Luau Analyzer não estavam disponíveis no ambiente desta integração; versões exatas ainda precisam ser registradas quando instaladas no ambiente de desenvolvimento.
 
-## Fase 1 conforme relatório do Codex
-O Codex informou:
-- Alteração de Config.luau, DataManager.luau e Main.server.luau.
-- Criação de FASE-1-TECNICA.md.
-- 100 moedas e Gatomelo inicial para novos jogadores.
-- Reserva e validação de sessão JobId + GUID.
-- UpdateAsync para aquisição e gravação condicionada à sessão.
-- Saves locais serializados e revisão de dados.
-- Invalidação da sessão e Kick em falha/resultado inesperado de renovação.
-- Validação de jogador, personagem, proprietário, slot e distância.
-- Economia documentada e corrigida.
+## Arquitetura de dados e Supabase
+Roblox DataStore permanece a fonte de verdade para moedas, inventário, criaturas, slots e progresso dos jogadores. O código em `roblox/` não chama Supabase nem contém configuração de gateway. A infraestrutura Supabase do repositório permanece separada e inalterada.
 
-Isso é relato de implementação, não validação independente.
+## Fase 1 conforme revisão estática
+O código presente contém:
+- 100 moedas e Gatomelo para novos jogadores.
+- Reserva de base durante carregamento.
+- Session ID JobId + GUID e UpdateAsync para aquisição/saves condicionais.
+- Saves serializados, revisão monotônica e retry limitado com backoff/jitter.
+- Invalidação de sessão em falha/resultado inesperado.
+- Validação server-side de jogador, personagem, dono, slot e distância.
+- Economia documentada: renda esperada 12,85; venda 128,50; lucro 28,50.
 
-## Testes informados
-- Verificações estáticas por PowerShell.
-- Conferência da fórmula econômica com tolerância a ponto flutuante.
-- Checks textuais de referências antigas e métodos de persistência.
-- Nenhuma execução de Luau, Rojo ou Roblox Studio.
-- Nenhum teste funcional em servidor Roblox.
+Esses achados são de inspeção estática, não prova de funcionamento na plataforma.
+
+## Testes informados nesta integração
+- SHA-256 dos cinco arquivos copiados corresponde à origem.
+- JSON de `roblox/default.project.json` parseado e caminhos verificados.
+- `git diff --check` executado.
+- Nenhuma execução de Rojo, Luau, Roblox Studio ou servidor publicado.
+- Nenhum teste funcional em DataStore foi executado.
 
 ## Limites conhecidos
 - Sem transação atômica entre chaves de dois jogadores; roubo pode falhar entre persistências.
 - Chamada DataStore pendurada não pode ser cancelada pelo código.
 - Throttling, renovação, resultados ambíguos, liberação de lock e shutdown precisam de teste na plataforma.
 
-## Sincronização futura do código
-1. Obter a pasta local atualizada da Fase 1.
-2. Confirmar que contém os arquivos relatados.
-3. Revisar .gitignore e remover dados sensíveis/gerados.
-4. Comparar com o ZIP original.
-5. Executar ferramentas disponíveis.
-6. Adicionar o código em commit separado da documentação.
+## Próximos passos de validação
+1. Instalar/selecionar versão aprovada do Rojo no ambiente de desenvolvimento e registrar a versão.
+2. Compilar o projeto de `roblox/` em artefato local ignorado pelo Git.
+3. Abrir o artefato no Roblox Studio e verificar Explorer e Output.
+4. Executar os cenários funcionais da Fase 1 com experiência e DataStore exclusivamente de desenvolvimento.
+5. Manter Fase 2 bloqueada até o gate da Fase 1 ser atendido.

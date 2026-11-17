@@ -1,7 +1,7 @@
 # Fase 1 — Fundamentação técnica
 
-**Status:** implementação relatada; validação funcional pendente. Não aprovada para publicação.  
-**Última revisão relatada:** 2026-11-16.
+**Status:** código integrado e revisão estática realizada; validação funcional pendente. Não aprovada para publicação.
+**Última atualização documental:** 2026-11-16.
 
 ## Escopo
 - 100 moedas e Gatomelo para novos jogadores.
@@ -14,15 +14,19 @@
 - Validação server-side de ações e roubo.
 - Economia documentada e plano de testes.
 
-## Arquivos relatados como modificados
-- src/shared/Config.luau
-- src/server/DataManager.luau
-- src/server/Main.server.luau
-- FASE-1-TECNICA.md
+## Código integrado
 
-Os arquivos não foram sincronizados para este repositório.
+Em 2026-11-16, os arquivos atuais da pasta `C:\Users\Archie\Downloads\BrainrotFarm` foram copiados para `roblox/` neste repositório. A origem não possuía histórico Git próprio; portanto, esta integração é um snapshot e não uma importação de commits.
 
-## Revisão final relatada pelo Codex
+- `roblox/default.project.json`
+- `roblox/src/shared/Config.luau`
+- `roblox/src/server/Main.server.luau`
+- `roblox/src/server/DataManager.luau`
+- `roblox/src/client/Main.client.luau`
+
+Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e coincidem. O arquivo Rojo foi parseado como JSON e seus três caminhos existem. Não foram feitas alterações aos scripts.
+
+## Revisão estática reportada no código
 - Session ID JobId + GUID.
 - Saves condicionados à sessão atual.
 - Saves locais serializados e revisão de dados.
@@ -33,17 +37,25 @@ Os arquivos não foram sincronizados para este repositório.
 - Roubo em memória sem yield entre remoção do slot e inserção no inventário.
 - Cálculo econômico corrigido.
 
+A existência desses mecanismos no código e a cópia byte a byte não comprovam que funcionem corretamente em Roblox.
+
 ## Riscos
 - Sem transação atômica entre chaves de dois jogadores; roubo pode ficar inconsistente em crash entre gravações.
 - Chamada DataStore pendurada não pode ser cancelada.
 - Lease, throttling, resultados ambíguos, liberação e shutdown não foram validados em Roblox.
-- Revisão foi estática.
+- Nenhum teste funcional de Studio/servidor publicado foi executado nesta integração.
 
-## Testes
-Ver docs/PLANO_DE_TESTES.md. A revisão informou checks estáticos por PowerShell aprovados, incluindo fórmula econômica com tolerância. Não houve Luau/Rojo nem Roblox Studio.
+## Testes e validações desta integração
+- SHA-256 dos cinco arquivos de origem/destino: correspondentes.
+- JSON de `roblox/default.project.json`: válido.
+- Caminhos `src/shared`, `src/server` e `src/client`: presentes.
+- `git diff --check`: resultado registrado no relatório desta integração.
+- Build Rojo, análise Luau e Roblox Studio: **não executados**.
+- Ver [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os testes funcionais pendentes.
 
 ## Critérios de saída
-- [ ] Arquivos atuais revisados diretamente.
+- [x] Arquivos atuais revisados diretamente e snapshot integrado.
+- [x] Hashes dos arquivos copiados e estrutura JSON/path verificados.
 - [ ] Build Rojo com versão registrada.
 - [ ] Análise/sintaxe Luau executada.
 - [ ] Primeiro acesso e retorno aprovados em DataStore de desenvolvimento.
