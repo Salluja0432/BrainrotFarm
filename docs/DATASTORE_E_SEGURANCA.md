@@ -15,6 +15,7 @@ O `DataManager.validData` aplica validação estrutural antes de adquirir uma se
 - Sessão persistida, quando presente, exige ID não vazio e heartbeat finito e não negativo; campos extras dentro da sessão são rejeitados.
 - Campos de nível superior são limitados aos campos conhecidos do formato atual/legado. Campos desconhecidos são bloqueados, não descartados silenciosamente. `shieldUntil` é aceito como campo transitório legado e reiniciado em zero ao carregar.
 - Registros inválidos ou com versão não suportada não são substituídos por dados iniciais. A transformação de `UpdateAsync` retorna `nil` para cancelar a gravação, preservando o valor existente.
+- Uma tentativa repetida de liberação reconhece `lastReleasedSession` quando a liberação anterior já foi confirmada no backend, mesmo que a resposta ao servidor tenha sido perdida; ela retorna o registro atual sem alterar um lock eventualmente adquirido por outra sessão.
 - O snapshot em memória é validado antes de ser enviado ao DataStore. Se estiver inválido, a sessão é invalidada e o salvamento é cancelado.
 - A renda percorre somente os seis índices permitidos, nunca valores adicionais fora da base.
 

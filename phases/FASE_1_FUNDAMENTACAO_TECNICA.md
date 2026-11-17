@@ -46,6 +46,7 @@ Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e co
 - Bloquear versões explícitas desconhecidas sem regravar o registro.
 - Validar novamente os dados em memória antes de salvar.
 - Cancelar transformações de `UpdateAsync` com retorno `nil` quando o registro é inválido ou pertence a outra sessão.
+- Reconhecer uma liberação já persistida em tentativas repetidas após resposta ambígua, sem substituir lock de sessão posterior.
 - Calcular renda apenas pelos índices de slots configurados.
 
 A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os casos pendentes.

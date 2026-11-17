@@ -277,8 +277,15 @@ function DataManager.save(player, releaseSession)
 		operationNow = os.time()
 		return store:UpdateAsync(key, function(old)
 			-- Pure callback: no yielding, notifications, cache mutation, or side effects.
-			if not old or not validData(old) or not old.session or old.session.id ~= sessionId then
-				return nil -- Never overwrite a missing, malformed, or differently-owned record.
+			if not old or not validData(old) then
+				return nil -- Never overwrite a missing or malformed record.
+			end
+			if releaseSession and old.lastReleasedSession == sessionId
+				and (not old.session or old.session.id ~= sessionId) then
+				return old -- An earlier attempt already released this session; do not touch a newer lock.
+			end
+			if not old.session or old.session.id ~= sessionId then
+				return nil -- Never overwrite a record owned by another session.
 			end
 			local nextData = table.clone(snapshot)
 			nextData.revision = (old.revision or 0) + 1
