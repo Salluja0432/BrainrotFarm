@@ -205,6 +205,9 @@ local function markLost(player, session, reason)
 		return
 	end
 	session.active = false
+	if sessions[player] == session then
+		sessions[player] = nil
+	end
 	warn("[DataManager] Sessão invalidada para " .. player.Name .. ": " .. tostring(reason))
 	if player.Parent then
 		player:Kick("Sua sessão de dados foi interrompida. Entre novamente para proteger seu progresso.")
@@ -398,6 +401,11 @@ function DataManager.save(player, releaseSession)
 	end
 	if not ownsResult then
 		markLost(player, session, result or "Resultado desconhecido ao salvar/renovar sessão")
+		session.busy = false
+		return false
+	end
+	if not session.active or sessions[player] ~= session then
+		-- Another path invalidated this session while the DataStore request was yielding.
 		session.busy = false
 		return false
 	end

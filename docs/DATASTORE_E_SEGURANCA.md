@@ -19,6 +19,7 @@ O `DataManager.validData` aplica validação estrutural antes de adquirir uma se
 - A repetição é limitada a marcadores documentados de falhas transitórias de throttling/serviço interno/rejeição temporária; erros permanentes ou não reconhecidos param sem consumir todas as tentativas. A lista de marcadores precisa ser confirmada com mensagens reais do ambiente de desenvolvimento.
 - Depois que uma operação falha, o módulo faz uma leitura única com `DataStoreGetOptions.UseCache = false`. Aquisição é reconhecida somente se o registro confirmar o mesmo ID de sessão; autosave exige sessão, revisão avançada e payload idêntico; liberação exige `lastReleasedSession` correspondente. Se a leitura não provar o resultado, o módulo continua falhando fechado.
 - O snapshot em memória é validado antes de ser enviado ao DataStore. Se estiver inválido, a sessão é invalidada e o salvamento é cancelado.
+- `markLost` remove a sessão invalidada do cache em memória. Uma resposta de DataStore que chegue depois não pode atualizar nem reativar uma sessão que já foi invalidada por outra rotina.
 - A renda percorre somente os seis índices permitidos, nunca valores adicionais fora da base.
 
 Não foi criado limite numérico de itens no inventário nesta etapa. O limite de produto precisa ser decidido separadamente; o registro completo também deve respeitar o limite de tamanho de objeto do DataStore.
