@@ -134,6 +134,36 @@ local function retry(operation)
 	return false, lastError
 end
 
+local function readUncached(key)
+	local options = Instance.new("DataStoreGetOptions")
+	options.UseCache = false
+	return pcall(function()
+		return store:GetAsync(key, options)
+	end)
+end
+
+local function sameArray(left, right)
+	for key, value in left do
+		if right[key] ~= value then
+			return false
+		end
+	end
+	for key, value in right do
+		if left[key] ~= value then
+			return false
+		end
+	end
+	return true
+end
+
+local function matchesSavedPayload(current, snapshot)
+	return current.coins == snapshot.coins
+		and current.version == snapshot.version
+		and current.revision > snapshot.revision
+		and sameArray(current.inventory, snapshot.inventory)
+		and sameArray(current.placed, snapshot.placed)
+end
+
 local function dataPayload(data)
 	return {
 		coins = math.floor(data.coins),
@@ -197,8 +227,16 @@ function DataManager.load(player)
 	end)
 
 	if not ok then
-		warn("[DataManager] Falha/resultado desconhecido ao adquirir sessão para " .. player.Name .. ": " .. tostring(result))
-		return nil, result
+		local verifyOk, verified = readUncached(key)
+		if verifyOk and verified and validData(verified) and verified.session
+			and verified.session.id == sessionId then
+			result = verified
+			ok = true
+			warn("[DataManager] Aquisição de sessão confirmada por leitura sem cache após resposta ambígua para " .. player.Name)
+		else
+			warn("[DataManager] Falha/resultado desconhecido ao adquirir sessão para " .. player.Name .. ": " .. tostring(result))
+			return nil, result
+		end
 	end
 	if not result or not validData(result) or not result.session or result.session.id ~= sessionId then
 		return nil, "Sessão ocupada ou registro inválido"
@@ -272,7 +310,8 @@ function DataManager.save(player, releaseSession)
 	local key = "u_" .. player.UserId
 	local sessionId = session.id
 	local snapshot = dataPayload(session.data)
-	local operationNow = os.time()
+	local saveStartedAt = os.time()
+	local operationNow = saveStartedAt
 	local ok, result = retry(function()
 		operationNow = os.time()
 		return store:UpdateAsync(key, function(old)
@@ -300,6 +339,24 @@ function DataManager.save(player, releaseSession)
 			return nextData
 		end)
 	end)
+
+	if not ok then
+		local verifyOk, verified = readUncached(key)
+		if verifyOk and verified and validData(verified) then
+			if releaseSession and verified.lastReleasedSession == sessionId
+				and (not verified.session or verified.session.id ~= sessionId) then
+				result = verified
+				ok = true
+				warn("[DataManager] Liberação de sessão confirmada por leitura sem cache após resposta ambígua para " .. player.Name)
+			elseif not releaseSession and verified.session and verified.session.id == sessionId
+				and verified.session.heartbeat >= saveStartedAt
+				and matchesSavedPayload(verified, snapshot) then
+				result = verified
+				ok = true
+				warn("[DataManager] Salvamento confirmado por leitura sem cache após resposta ambígua para " .. player.Name)
+			end
+		end
+	end
 
 	local ownsResult = ok and result ~= nil and result.lastReleasedSession == sessionId
 	if not releaseSession and ok and result and result.session and result.session.id == sessionId

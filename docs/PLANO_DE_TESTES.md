@@ -51,6 +51,9 @@ Os casos abaixo foram adicionados ao plano, mas ainda precisam de harness/teste 
 | F1-18 | Dados em memória inválidos antes do save | Save cancelado e sessão invalidada |
 | F1-19 | Campo superior ou campo de sessão desconhecido | Registro rejeitado sem remover o campo do DataStore |
 | F1-20 | Resposta perdida após liberação de sessão | Nova tentativa reconhece a liberação anterior sem alterar eventual lock de sessão nova |
+| F1-21 | Resposta ambígua ao adquirir sessão | Leitura sem cache confirma somente o mesmo ID de sessão; caso contrário, entrada bloqueada |
+| F1-22 | Resposta ambígua ao salvar | Leitura sem cache confirma somente revisão avançada e payload correspondente |
+| F1-23 | Resposta ambígua ao liberar | Leitura sem cache confirma somente `lastReleasedSession` da sessão liberada |
 
 ## Isolamento obrigatório
 Executar testes somente em uma experiência Roblox separada e com um nome de DataStore exclusivo para desenvolvimento. Não habilitar Studio Access to API Services contra dados reais de jogadores. Veja [Configuração de Roblox Studio e Rojo](ROBLOX_STUDIO_E_ROJO.md).
