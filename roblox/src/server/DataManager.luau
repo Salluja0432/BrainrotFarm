@@ -8,6 +8,19 @@ local store = DataStoreService:GetDataStore(Config.DataStoreName)
 local DataManager = {}
 local sessions = {}
 
+local allowedDataFields = {
+	coins = true,
+	inventory = true,
+	placed = true,
+	lastOfflineClaim = true,
+	lastSeen = true,
+	version = true,
+	revision = true,
+	session = true,
+	lastReleasedSession = true,
+	shieldUntil = true,
+}
+
 local function defaultData()
 	return {
 		coins = Config.StartingCoins,
@@ -58,20 +71,10 @@ local function validData(data)
 
 	-- Version-less records are the supported legacy format. Any explicit version
 	-- other than Config.DataVersion is rejected until a migration is implemented.
-	local allowedFields = {
-		coins = true,
-		inventory = true,
-		placed = true,
-		lastOfflineClaim = true,
-		lastSeen = true,
-		version = true,
-		revision = true,
-		session = true,
-		lastReleasedSession = true,
-		shieldUntil = true,
-	}
+	-- Unknown top-level fields are rejected until an explicit migration
+	-- defines how they are preserved. shieldUntil is transient and reset on load.
 	for key in data do
-		if typeof(key) ~= "string" or not allowedFields[key] then
+		if typeof(key) ~= "string" or not allowedDataFields[key] then
 			return false
 		end
 	end
