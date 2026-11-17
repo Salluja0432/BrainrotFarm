@@ -8,7 +8,7 @@ O roadmap é orientativo. Mudanças de ordem exigem decisão registrada.
 - Scripts iniciais Luau e mapeamento Rojo.
 
 ## Fase 1 — fundamentação técnica
-**Status:** implementação relatada; validação de plataforma pendente.
+**Status:** implementação integrada e revisão estática concluída; validação funcional na plataforma pendente.
 - Inicialização de novos jogadores.
 - Reserva de bases.
 - Sessão e persistência.
@@ -16,7 +16,7 @@ O roadmap é orientativo. Mudanças de ordem exigem decisão registrada.
 - Economia e documentação.
 - Plano de testes.
 
-**Gate:** não iniciar desenvolvimento amplo da Fase 2 antes de testes de Studio e revisão direta do código.
+**Gate:** a Fase 2 permanece bloqueada até a aprovação dos testes essenciais da Fase 1, incluindo validação no Studio e revisão direta do código.
 
 ## Fase 2 — gameplay e retenção
 **Não iniciada.** Escopo após aprovação da Fase 1.

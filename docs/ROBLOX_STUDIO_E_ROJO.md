@@ -2,7 +2,15 @@
 
 ## Estado de validação
 
-O código do projeto Roblox está em `roblox/`. A integração preservou os cinco arquivos-fonte/configuração do snapshot original byte a byte. Isso confirma a cópia e a estrutura, **não** a execução do jogo. Rojo CLI e Roblox Studio não estão disponíveis no ambiente que fez a integração; build, análise Luau e testes funcionais permanecem pendentes.
+O código do projeto Roblox está em `roblox/`. A integração preservou os cinco arquivos-fonte/configuração do snapshot original byte a byte. Isso confirma a cópia e a estrutura, **não** a execução do jogo. Na etapa de integração do snapshot, não foram feitos build Rojo, análise Luau ou testes funcionais no Studio.
+
+## Evidência histórica e disponibilidade atual do Rojo
+
+O histórico do projeto registra uma execução anterior de `rojo --version` com resultado `7.7.1` e um build Rojo concluído. Isso é evidência histórica de instalação/uso e de uma compilação anterior; não é um teste repetido nesta revisão.
+
+Na auditoria de 17/11/2026, os comandos `rojo` e `rokit` não estavam disponíveis no `PATH` do ambiente atual. O arquivo local não rastreado `rokit.toml` declara `rojo-rbx/rojo@7.7.1`, mas a declaração não comprova que essa versão esteja instalada atualmente.
+
+Não foi encontrado log ou metadado que vincule definitivamente o build histórico à versão 7.7.1 nem que demonstre que o arquivo `.rbxlx` aberto no Studio foi gerado por ela. Portanto, o histórico de build é registrado, mas a proveniência da build aberta permanece não confirmada.
 
 ## Estrutura
 
@@ -26,13 +34,13 @@ roblox/
 3. Instale o Rojo CLI por um método oficial (Rokit ou binário oficial) e registre a versão usada. Esta integração não adicionou manifesto nem dependências.
 4. Abra um terminal em `BrainrotFarm-Control\roblox`.
 
-Para compilar depois que Rojo estiver disponível, execute `rojo --version` e, com a pasta `build/` do repositório criada, use:
+Para reproduzir e registrar uma nova compilação, primeiro confirme a versão instalada com `rojo --version` e, com a pasta `build/` do repositório criada, use:
 
 ```powershell
 rojo build -o ..\build\BrainrotFarm.rbxlx
 ```
 
-Para live sync, execute `rojo serve` nessa pasta, conecte pelo plugin Rojo no Studio e confira o Explorer antes de sincronizar. A compilação e o live sync **não foram executados nesta integração**.
+Para live sync, execute `rojo serve` nessa pasta, conecte pelo plugin Rojo no Studio e confira o Explorer antes de sincronizar. O build histórico mencionado acima não substitui a validação reprodutível; live sync e testes funcionais permanecem pendentes.
 
 ## Ambiente de desenvolvimento isolado
 

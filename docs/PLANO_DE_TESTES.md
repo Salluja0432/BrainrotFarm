@@ -14,7 +14,7 @@ Para cada execução, registrar data/hora, commit, ferramentas/versões, ambient
 | JSON de `roblox/default.project.json` | Passou | Parse estático executado. |
 | Caminhos `$path` do Rojo | Passou | `src/shared`, `src/server`, `src/client` existem dentro de `roblox/`. |
 | `git diff --check` | Passou | Executado após as alterações. |
-| Build Rojo | **Pendente** | CLI não instalado; não executar nem instalar nesta integração. |
+| Build Rojo reproduzível e rastreável | **Pendente** | O histórico registra um build anterior concluído com `rojo --version` 7.7.1; não há log que vincule essa versão ao `.rbxlx` aberto. `rojo`/`rokit` não estavam no `PATH` durante a auditoria de 17/11/2026. |
 | Abrir o `.rbxlx` gerado no Roblox Studio | **Pendente** | Depende do build e do Studio. |
 | Execução/validação funcional | **Pendente** | Nenhum cenário funcional executado. |
 
@@ -53,7 +53,7 @@ Executar testes somente em uma experiência Roblox separada e com um nome de Dat
 Primeira sessão; desktop em resoluções distintas; celular; tablet/console; inventário cheio; base cheia; proteção e cooldown; mensagens de DataStore; seleção de item raro.
 
 ## Ferramentas e limitações
-Rojo, Rojo CLI, Luau e Luau Analyzer não estão disponíveis neste ambiente. Nenhuma ferramenta foi instalada. A integração confirmou somente cópia, hashes, JSON, caminhos e whitespace do diff.
+Na auditoria de 17/11/2026, `rojo` e `rokit` não estavam disponíveis no `PATH`; Luau e Luau Analyzer também não foram executados. O histórico do projeto registra um build Rojo anterior concluído com a versão 7.7.1, mas sem proveniência que o vincule ao artefato atualmente aberto. A integração do snapshot confirmou cópia, hashes, JSON, caminhos e whitespace do diff; ver [docs/ROBLOX_STUDIO_E_ROJO.md](ROBLOX_STUDIO_E_ROJO.md) para os limites dessa evidência.
 
 ## Gate de Fase 1
 Aprovar somente após revisão dos arquivos atuais, build Rojo com versão registrada, casos de Studio e DataStore de desenvolvimento executados, concorrência/falhas avaliadas e riscos residuais documentados.

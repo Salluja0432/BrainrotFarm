@@ -3,9 +3,9 @@
 **Data de referência:** 2026-11-16.
 
 ## Escopo de evidência
-O código-fonte Roblox atual foi integrado em `roblox/` a partir de `C:\Users\Archie\Downloads\BrainrotFarm`. A origem não tinha histórico Git próprio; os arquivos foram importados como snapshot.
+O código-fonte Roblox atual foi integrado em `roblox/` a partir da pasta local original do projeto. A origem não tinha histórico Git próprio; os arquivos foram importados como snapshot.
 
-A inspeção confirmou os arquivos e sua correspondência byte a byte com a origem. O projeto Rojo foi validado estruturalmente, mas build Rojo, análise Luau e execução no Roblox Studio ainda não foram realizados. Portanto, integração de código não equivale a validação funcional.
+A inspeção confirmou os arquivos e sua correspondência byte a byte com a origem. Na etapa de integração do snapshot, não foram feitos build Rojo, análise Luau ou testes funcionais no Studio. O histórico do projeto registra `rojo --version` como 7.7.1 e um build anterior concluído; a auditoria de 17/11/2026 não encontrou `rojo` nem `rokit` no `PATH`, nem log que vincule definitivamente a versão declarada à build aberta. Portanto, a integração e o build histórico não equivalem à validação funcional. Ver [docs/ROBLOX_STUDIO_E_ROJO.md](ROBLOX_STUDIO_E_ROJO.md).
 
 ## Estrutura atual
 - `roblox/src/client/Main.client.luau` — HUD, botões e notificações.
@@ -21,7 +21,7 @@ A inspeção confirmou os arquivos e sua correspondência byte a byte com a orig
 - `StarterPlayer.StarterPlayerScripts.Client` ← `roblox/src/client`
 
 ## Tecnologias e dependências
-Roblox Studio, Luau, Rojo, Git/GitHub e Codex. Nenhum gerenciador de dependências ou manifesto Rojo foi importado. Rojo CLI, Rokit, Luau e Luau Analyzer não estavam disponíveis no ambiente desta integração; versões exatas ainda precisam ser registradas quando instaladas no ambiente de desenvolvimento.
+Roblox Studio, Luau, Rojo, Git/GitHub e Codex. Nenhum gerenciador de dependências ou manifesto Rokit foi incluído no commit de integração. Há um `rokit.toml` local não rastreado que declara Rojo 7.7.1; o histórico também registra um build anterior com Rojo, mas a versão usada nessa build não está vinculada por log ao artefato aberto. Na auditoria de 17/11/2026, `rojo` e `rokit` não estavam disponíveis no `PATH` atual.
 
 ## Arquitetura de dados e Supabase
 Roblox DataStore permanece a fonte de verdade para moedas, inventário, criaturas, slots e progresso dos jogadores. O código em `roblox/` não chama Supabase nem contém configuração de gateway. A infraestrutura Supabase do repositório permanece separada e inalterada.

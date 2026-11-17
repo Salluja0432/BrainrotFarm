@@ -1,5 +1,11 @@
 # Conectar Codex ao Supabase — Brainrot Farm
 
+## Estado da conexão
+
+Na verificação de 17/11/2026, o Codex CLI estava conectado ao projeto de desenvolvimento Brainrot Farm Dev pelo MCP oficial do Supabase. A configuração local usa `read_only=true`, está escopada ao project ref do projeto e mantém os grupos `database,docs`. O ChatGPT utiliza a integração Supabase conectada ao mesmo projeto.
+
+As instruções abaixo servem para configurar outro ambiente ou recuperar uma conexão. Elas não significam que a conexão verificada neste ambiente esteja pendente. Preserve o modo somente leitura.
+
 ## Primeiro: instalar a Codex CLI no Windows
 
 Ter acesso ao aplicativo Codex não significa que o comando `codex` esteja instalado no PowerShell. A CLI é uma ferramenta separada.
@@ -27,7 +33,7 @@ Se a instalação terminar mas o comando não for encontrado, feche e reabra o t
 ## Configuração segura do servidor Supabase
 
 O repositório possui `.codex/config.toml`, com configuração MCP remota:
-- Project ref fixo: `dhlomskkibsjnvsnvozy` (BrainrotFarm Dev).
+- Project ref fixo: `dhlomskkibsjnvsnvozy` (Brainrot Farm Dev).
 - `read_only=true`: operações SQL do MCP ficam em modo somente leitura.
 - `features=database,docs`: somente grupos de banco de dados e documentação.
 - Aprovação de ferramentas: `prompt`.
@@ -94,19 +100,25 @@ Resultados esperados:
 
 ### Os documentos não aparecem na pasta local
 
-O repositório GitHub `Salluja0432/BrainrotFarm` contém atualmente documentação,
-migrations e integração Supabase. A cópia local original em
-`C:\\Users\\Archie\\Downloads\\BrainrotFarm` é a pasta do protótipo
-Luau e não deve ser presumida como clone Git do repositório de documentação.
+O repositório GitHub `Salluja0432/BrainrotFarm` contém documentação, migrations,
+integração Supabase e o snapshot do código Roblox sob `roblox/`. A pasta original
+do protótipo Luau é distinta do clone Git e não deve ser presumida como clone do
+repositório de documentação.
 
 Verifique sem alterar nada:
 
 ```powershell
-cd C:\\Users\\Archie\\Downloads\\BrainrotFarm
-Test-Path .git
-Test-Path .\\AGENTS.md
-Test-Path .\\docs\\BANCO_COMPARTILHADO_SUPABASE.md
-git remote -v
+$downloadsPath = Join-Path $HOME 'Downloads'
+$prototypePath = Join-Path $downloadsPath 'BrainrotFarm'
+if (Test-Path -LiteralPath $prototypePath) {
+    Set-Location $prototypePath
+    Test-Path .git
+    Test-Path .\AGENTS.md
+    Test-Path .\docs\BANCO_COMPARTILHADO_SUPABASE.md
+    git remote -v
+} else {
+    Write-Output 'A pasta original do protótipo não está neste local; ela é distinta do clone BrainrotFarm-Control.'
+}
 ```
 
 Se `.git` e os documentos retornarem `False`, **não execute `git pull` nessa
@@ -114,14 +126,21 @@ pasta**. Preserve o protótipo e clone o repositório de documentação em uma p
 vizinha:
 
 ```powershell
-cd C:\\Users\\Archie\\Downloads
-git clone https://github.com/Salluja0432/BrainrotFarm.git BrainrotFarm-Control
+$downloadsPath = Join-Path $HOME 'Downloads'
+$repoPath = Join-Path $downloadsPath 'BrainrotFarm-Control'
+if (-not (Test-Path $repoPath)) {
+    Set-Location $downloadsPath
+    git clone https://github.com/Salluja0432/BrainrotFarm.git BrainrotFarm-Control
+}
+Set-Location $repoPath
+codex
 ```
 
-Abra `C:\\Users\\Archie\\Downloads\\BrainrotFarm-Control` no Codex.
-Esse clone tem a documentação e a configuração MCP, mas ainda não contém os
-scripts-fonte Luau do protótipo original. Não confunda as duas pastas. A futura
-consolidação do código no repositório deve ser feita com revisão e backup.
+O comando `codex`, executado com o diretório atual em `$repoPath`, abre a sessão
+na raiz do clone. Se o clone já existir, o bloco não executa outro `git clone`.
+O projeto contém documentação, configuração MCP e o snapshot integrado dos
+scripts Luau em `roblox/`. A pasta original do protótipo permanece separada; não
+a confunda com o clone Git `BrainrotFarm-Control`.
 
 ### O comando lista o servidor, mas a sessão não mostra ferramentas
 

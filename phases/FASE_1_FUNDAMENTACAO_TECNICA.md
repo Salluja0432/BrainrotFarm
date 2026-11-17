@@ -16,7 +16,7 @@
 
 ## Código integrado
 
-Em 2026-11-16, os arquivos atuais da pasta `C:\Users\Archie\Downloads\BrainrotFarm` foram copiados para `roblox/` neste repositório. A origem não possuía histórico Git próprio; portanto, esta integração é um snapshot e não uma importação de commits.
+Em 2026-11-16, os arquivos atuais da pasta local original do projeto Roblox foram copiados para `roblox/` neste repositório. A origem não possuía histórico Git próprio; portanto, esta integração é um snapshot e não uma importação de commits.
 
 - `roblox/default.project.json`
 - `roblox/src/shared/Config.luau`

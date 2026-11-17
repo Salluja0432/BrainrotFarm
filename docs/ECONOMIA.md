@@ -47,4 +47,4 @@ Tempo teórico para recuperar 100 moedas usando a renda média:
 - Confirmar que as chances somam 100%.
 
 ## Valor inicial reportado
-O Codex informou que jogador sem registro recebe 100 moedas e um Gatomelo no inventário. Confirmar no código e no Studio.
+Inspeção estática de `roblox/src/shared/Config.luau` confirmou 100 moedas iniciais e Gatomelo para jogadores sem dados anteriores. A validação funcional desse fluxo no Roblox Studio com DataStore de desenvolvimento permanece pendente.

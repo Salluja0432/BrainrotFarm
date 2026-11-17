@@ -8,8 +8,9 @@ Brainrot Farm é um conceito original de simulador de coleção e administraçã
 
 ## Estado atual
 
-- **Código-fonte Roblox:** integrado em [`roblox/`](roblox/), estruturado como projeto Rojo. Os scripts são um snapshot da pasta original `BrainrotFarm`, que não tinha histórico Git próprio.
-- **Fase 1 — fundamentação técnica:** código integrado e inspecionado estaticamente; **não foi executado nem validado funcionalmente no Roblox Studio**.
+- **Implementação:** código-fonte Roblox integrado em [`roblox/`](roblox/), estruturado como projeto Rojo e importado como snapshot da pasta original `BrainrotFarm`, sem histórico Git próprio.
+- **Revisão estática:** os arquivos e o mapeamento Rojo foram inspecionados; isso não comprova comportamento em runtime.
+- **Validação funcional da Fase 1:** pendente; o jogo ainda não foi validado funcionalmente no Roblox Studio.
 - **Fase 2:** não iniciada.
 - **Publicação:** não autorizada nem preparada.
 
@@ -71,6 +72,6 @@ A fundação Supabase está versionada em [supabase/](supabase/):
 
 ## Codex ↔ Supabase
 
-- Configuração MCP restrita e somente leitura: [`.codex/config.toml`](.codex/config.toml)
-- Passos de autenticação e verificação: [docs/CODEX_SUPABASE.md](docs/CODEX_SUPABASE.md)
-- O Codex precisa confiar neste repositório e concluir OAuth localmente; o arquivo versionado não autentica a conta sozinho.
+- No ambiente de desenvolvimento do responsável, o ChatGPT utiliza a integração Supabase conectada ao projeto de desenvolvimento.
+- O Codex CLI usa o MCP oficial do Supabase; a configuração local em [`.codex/config.toml`](.codex/config.toml) limita a conexão ao projeto e usa `read_only=true`.
+- Veja [docs/CODEX_SUPABASE.md](docs/CODEX_SUPABASE.md) para configuração inicial em outros ambientes e solução de problemas. A conexão verificada neste ambiente está ativa.

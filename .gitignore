@@ -18,6 +18,8 @@ Thumbs.db
 .env.*
 !.env.example
 
-# Arquivos binários exportados do Roblox Studio (não substituir o projeto-fonte Rojo)
+# Arquivos de place/model exportados pelo Roblox Studio; preserve o projeto-fonte Rojo
 *.rbxl
+*.rbxlx
 *.rbxm
+*.rbxmx

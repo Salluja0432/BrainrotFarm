@@ -11,7 +11,7 @@
 - **Consequência:** comandos Rojo e caminhos `$path` são executados/resolvidos a partir de `roblox/`; o código do jogo não passa a chamar Supabase.
 
 ## 2026-11-16 — Integração como snapshot da origem local
-- **Decisão:** copiar os cinco arquivos atuais de `C:\Users\Archie\Downloads\BrainrotFarm` sem importar histórico Git.
+- **Decisão:** copiar os cinco arquivos atuais da pasta local original do projeto Roblox sem importar histórico Git.
 - **Motivo:** a pasta de origem não possui repositório Git próprio; a branch `main` de BrainrotFarm-Control permanece a linha de histórico.
 - **Consequência:** hashes SHA-256 foram comparados nesta integração; a cópia não representa commits anteriores e não prova validação funcional.
 
