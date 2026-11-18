@@ -113,12 +113,14 @@ A rotina de carregamento precisa detectar pendingTransfer antes de tornar o joga
 
 1. Ler o journal correspondente.
 2. Obter um lease de recuperação exclusivo no journal.
-3. Adquirir os bloqueios de sessão dos dois perfis com um identificador de recuperação, exigindo que os leases anteriores tenham expirado ou sido liberados. Não sobrescrever uma sessão ainda ativa.
-4. Se não for possível adquirir os dois perfis, liberar qualquer bloqueio parcial que ainda seja seguro liberar, manter as reservas e recusar a entrada jogável. Tentar novamente em outra entrada.
-5. Para PREPARING, abortar condicionalmente e remover apenas as reservas correspondentes; nenhuma criatura deve ter sido aplicada.
-6. Para COMMITTED, consultar lastAppliedTransferId em cada perfil e aplicar apenas o lado que ainda não foi aplicado.
-7. Para APPLIED, remover as reservas restantes.
-8. Verificar os dois perfis, marcar COMPLETED, liberar os leases de recuperação e permitir que o jogador faça um carregamento normal.
+3. Interpretar o estado antes de adquirir perfis:
+   - PREPARING: nenhuma alteração de propriedade ocorreu. Abortar condicionalmente o journal e adquirir apenas os perfis que ainda tenham pendingTransfer igual a esse ID, para remover essas reservas.
+   - COMMITTED: adquirir os bloqueios dos dois perfis, pois um ou ambos ainda precisam ser aplicados. Ambos devem estar inacessíveis a sessões normais.
+   - APPLIED: adquirir somente os perfis que ainda tenham pendingTransfer igual a esse ID. Um perfil cuja reserva já foi removida não precisa ser bloqueado novamente nem ter seu lastAppliedTransferId consultado; APPLIED já comprova que os dois lados foram persistidos.
+4. Todo bloqueio parcial precisa ser liberado de forma condicional se ainda pertencer a esta recuperação. Se o outro perfil estiver com sessão ativa, manter a transferência pendente e recusar a entrada jogável; tentar novamente em outra entrada.
+5. Para COMMITTED, consultar lastAppliedTransferId em cada perfil e aplicar apenas o lado que ainda não foi aplicado.
+6. Para APPLIED, remover somente as reservas restantes.
+7. Verificar as reservas removidas, marcar COMPLETED quando ambas não existirem, liberar os leases de recuperação e permitir que o jogador faça um carregamento normal.
 
 Um servidor que encontre um perfil pendente não pode simplesmente carregar o inventário e deixá-lo jogar. Se o outro perfil ainda estiver bloqueado por uma sessão válida, a recuperação deve falhar fechado e a entrada deve ser tentada novamente depois que o bloqueio anterior for liberado ou expirar.
 
