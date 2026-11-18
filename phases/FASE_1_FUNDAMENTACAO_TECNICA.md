@@ -52,7 +52,7 @@ Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e co
 - Remover sessões invalidadas do cache em memória e ignorar respostas tardias de gravações iniciadas antes da invalidação.
 - Calcular renda apenas pelos índices de slots configurados.
 
-A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os casos pendentes.
+A análise estática com luau-lsp 1.70.1 e sourcemap Rojo 7.7.1 passou no [GitHub Actions](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498). Build RBXLX, abertura no Studio e validação funcional permanecem pendentes. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md).
 
 ## Riscos
 - Não há transação atômica entre chaves DataStore de dois jogadores. O protocolo recuperável foi integrado na branch de trabalho, mas ainda não foi validado em runtime; o roubo permanece desativado por `Config.StealingEnabled = false`.
@@ -65,14 +65,16 @@ A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLAN
 - SHA-256 dos cinco arquivos de origem/destino: correspondentes na integração original.
 - JSON de `roblox/default.project.json`: válido.
 - Caminhos `src/shared`, `src/server` e `src/client`: presentes.
-- Build Rojo, análise Luau, execução de Studio e DataStore: **não executados nesta branch**.
+- Análise estática Luau via CI: **passou** (luau-lsp 1.70.1 + Rojo sourcemap 7.7.1).
+- Build RBXLX, execução de Studio e DataStore: **não executados nesta branch**.
 - Ver [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para o plano atualizado.
 
 ## Critérios de saída
 - [x] Arquivos atuais revisados diretamente e snapshot integrado.
 - [x] Hashes dos arquivos copiados e estrutura JSON/path verificados.
 - [ ] Validação estrita de saves legados com fixtures representativas.
-- [ ] Build Rojo com versão registrada.
+- [x] Análise estática Luau executada via CI.
+- [ ] Build Rojo com versão registrada e arquivo aberto no Studio.
 - [ ] Análise/sintaxe Luau executada.
 - [ ] Primeiro acesso e retorno aprovados em DataStore de desenvolvimento.
 - [ ] Capacidade e liberação de base aprovadas.
