@@ -43,10 +43,11 @@ Um DataStore separado, com uma chave exclusiva por ID de transferência, armazen
 
 - id, schemaVersion e status;
 - victimUserId e thiefUserId;
-- slotIndex e creatureName;
+- slotIndex, creatureName e destinationInventoryCount (contagem esperada antes da inserção);
 - createdAt;
-- sourceApplied e destinationApplied (marcadores informativos, confirmados contra os perfis);
-- metadados de recuperação/lease, se necessários.
+- recoverySessionId e recoveryHeartbeat enquanto um recuperador detém o lease.
+
+A confirmação de aplicação não é duplicada no journal: cada perfil guarda lastAppliedTransferId. Esse campo no próprio perfil é a evidência idempotente para saber se aquele lado já foi aplicado.
 
 Não armazenar inventários completos no journal. Não usar MemoryStore como fonte de verdade permanente.
 
@@ -113,14 +114,13 @@ A rotina de carregamento precisa detectar pendingTransfer antes de tornar o joga
 
 1. Ler o journal correspondente.
 2. Obter um lease de recuperação exclusivo no journal.
-3. Interpretar o estado antes de adquirir perfis:
-   - PREPARING: nenhuma alteração de propriedade ocorreu. Abortar condicionalmente o journal e adquirir apenas os perfis que ainda tenham pendingTransfer igual a esse ID, para remover essas reservas.
-   - COMMITTED: adquirir os bloqueios dos dois perfis, pois um ou ambos ainda precisam ser aplicados. Ambos devem estar inacessíveis a sessões normais.
-   - APPLIED: adquirir somente os perfis que ainda tenham pendingTransfer igual a esse ID. Um perfil cuja reserva já foi removida não precisa ser bloqueado novamente nem ter seu lastAppliedTransferId consultado; APPLIED já comprova que os dois lados foram persistidos.
-4. Todo bloqueio parcial precisa ser liberado de forma condicional se ainda pertencer a esta recuperação. Se o outro perfil estiver com sessão ativa, manter a transferência pendente e recusar a entrada jogável; tentar novamente em outra entrada.
-5. Para COMMITTED, consultar lastAppliedTransferId em cada perfil e aplicar apenas o lado que ainda não foi aplicado.
-6. Para APPLIED, remover somente as reservas restantes.
-7. Verificar as reservas removidas, marcar COMPLETED quando ambas não existirem, liberar os leases de recuperação e permitir que o jogador faça um carregamento normal.
+3. Interpretar o estado antes de atuar:
+   - PREPARING: nenhuma alteração de propriedade ocorreu. Abortar condicionalmente o journal e remover apenas a reserva deste perfil; o outro participante limpa a própria reserva quando entrar. Nenhum item é movido.
+   - COMMITTED: adquirir o bloqueio do outro perfil, além da sessão já adquirida para o jogador que está entrando. Os dois perfis permanecem inacessíveis a sessões normais.
+   - APPLIED ou COMPLETED: APPLIED prova que os dois lados já foram aplicados. Limpar somente a reserva ainda presente no perfil atual; não bloquear um participante cuja reserva já tenha sido removida.
+4. Para COMMITTED, consultar lastAppliedTransferId em cada perfil e aplicar apenas o lado que ainda não foi aplicado.
+5. Para APPLIED/COMPLETED, remover somente a reserva restante do perfil atual. Se o outro perfil ainda estiver pendente, ele fará a própria limpeza ao entrar.
+6. Marcar COMPLETED quando uma leitura confirmar que ambos os perfis não têm pendingTransfer. Liberar leases de recuperação e permitir o carregamento normal somente depois de a reserva do participante atual ter sido removida.
 
 Um servidor que encontre um perfil pendente não pode simplesmente carregar o inventário e deixá-lo jogar. Se o outro perfil ainda estiver bloqueado por uma sessão válida, a recuperação deve falhar fechado e a entrada deve ser tentada novamente depois que o bloqueio anterior for liberado ou expirar.
 
