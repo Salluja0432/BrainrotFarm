@@ -2,7 +2,15 @@
 
 ## Estado de validação
 
-O código do projeto Roblox está em `roblox/`. A integração preservou os cinco arquivos-fonte/configuração do snapshot original byte a byte. Isso confirma a cópia e a estrutura, **não** a execução do jogo. Na etapa de integração do snapshot, não foram feitos build Rojo, análise Luau ou testes funcionais no Studio.
+O código do projeto Roblox está em `roblox/`. A integração preservou os cinco arquivos-fonte/configuração do snapshot original byte a byte.
+
+**Build atual da branch `fix/phase1-strict-datastore-validation` (commit `bfa3759`):**
+- Rojo 7.7.1 confirmou a versão executada e concluiu o build `BrainrotFarm-transfer-validation-bfa3759.rbxlx`.
+- Artefato em `%TEMP%`: 67.459 bytes; SHA-256 `058EBBBB5CEEBC4A21D10F64E6234BDC021B0A8CA8E9329C19352B7E1922D64A`.
+- O arquivo foi aberto no Roblox Studio. Explorer confirmou os cinco scripts nos serviços e pastas mapeados, com os tipos de instância esperados.
+- `Config.TransferDataStoreName` e `Config.StealingEnabled = false` foram conferidos no módulo Config.
+
+Isso confirma geração, abertura e estrutura da build, **não** a execução do jogo. Não houve Play, teste de DataStore, API Services, multiplayer ou cenário de falha. O DataStore configurado no código ainda não é exclusivo de desenvolvimento; a validação persistente exige outra experiência e nomes de DataStore isolados.
 
 ## Evidência histórica e disponibilidade atual do Rojo
 
@@ -75,7 +83,7 @@ Para live sync, execute `rojo serve .\roblox\default.project.json` a partir da r
 ## Fluxo de teste
 
 - Primeiro valide estrutura e build Rojo sem conectar ou publicar uma experiência de produção.
-- Abra o `.rbxlx` gerado no Studio e revise Output e Explorer.
+- **Concluído:** abrir o `.rbxlx` gerado no Studio e confirmar a estrutura no Explorer. A revisão de Output durante execução permanece pendente.
 - Execute os cenários da [Fase 1 em `docs/PLANO_DE_TESTES.md`](PLANO_DE_TESTES.md) usando a experiência e o DataStore de desenvolvimento isolados.
 - Registre versão das ferramentas, ambiente, passos, resultado observado e logs. Marque como pendente qualquer cenário não executado.
 - Não declare persistência confiável ou Fase 1 aprovada apenas porque os arquivos compilam.
