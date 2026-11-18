@@ -162,15 +162,20 @@ Cada teste deve inspecionar o journal e os dois perfis no DataStore de desenvolv
 - O formato atual não identifica criaturas individualmente. Isso é suficiente somente enquanto criaturas não tiverem atributos individuais.
 - A estratégia de recuperação precisa ser implementada antes de ativar o novo roubo. Um journal sem recuperação integrada é insuficiente.
 
-## 10. Estado de implementação
+## 10. Estado de implementação na branch de trabalho
 
 - [x] Risco de gravações independentes identificado na revisão estática.
-- [ ] Especificação revisada contra todos os fluxos de sessão, save e saída.
-- [ ] Implementar bloqueio de ações e serialização.
-- [ ] Implementar journal e reservas.
-- [ ] Implementar aplicação idempotente.
-- [ ] Implementar recuperação antes de liberar jogadores.
-- [ ] Adicionar fixtures/harness de falhas.
+- [x] Especificação documentada e vinculada ao plano de testes.
+- [x] Bloqueio local de ações durante transferência e carregamento/recuperação.
+- [x] Serialização da transferência com autosave e saída do jogador.
+- [x] Journal persistente, reservas de perfil e estados condicionais.
+- [x] Aplicação idempotente de origem/destino com marcadores persistidos.
+- [x] Recuperação de PREPARING, COMMITTED e APPLIED antes de liberar o jogador.
+- [x] Lease persistente para serializar recuperadores concorrentes.
+- [x] Snapshots normais não podem sobrescrever perfis com reserva pendente.
+- [ ] Fixtures/harness de falhas.
 - [ ] Build e análise Luau.
-- [ ] Testar somente em experiência e DataStores de desenvolvimento isolados.
+- [ ] Testes somente em experiência e DataStores de desenvolvimento isolados.
 - [ ] Aprovar o roubo após evidência de todos os critérios de aceitação.
+
+**Estado de segurança:** a implementação está integrada somente na branch de trabalho e ainda não foi compilada/analisada nem testada no Roblox. `Config.StealingEnabled` permanece `false`; o roubo continua desativado até os testes de aceitação passarem. A lista de itens marcados acima indica código presente, não comportamento comprovado.
