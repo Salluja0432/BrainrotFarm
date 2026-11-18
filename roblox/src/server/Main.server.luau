@@ -155,17 +155,34 @@ local function steal(thief, plot, i)
 		activeTransfers[transferKey] = nil
 		return
 	end
-	vd.placed[i] = ""
-	table.insert(td.inventory, name)
+
+	local transferred = DataManager.transfer(victim, thief, i, name)
 	activeTransfers[transferKey] = nil
-	vd.shieldUntil = now + Config.ShieldTime
-	stealCooldown[thief] = now + Config.StealCooldown
+	if not transferred then
+		if thief.Parent then
+			notify(thief, "A transferência não pôde ser confirmada. Seus dados foram protegidos; tente novamente mais tarde.")
+		end
+		return
+	end
+
+	local completedAt = os.time()
+	local currentVictimData = DataManager.get(victim)
+	if currentVictimData then
+		currentVictimData.shieldUntil = completedAt + Config.ShieldTime
+	end
+	if thief.Parent then
+		stealCooldown[thief] = completedAt + Config.StealCooldown
+	end
 
 	refreshSlot(plot, i)
-	notify(thief, "Você roubou " .. name .. "!")
-	notify(victim, thief.Name .. " roubou " .. name .. "! Base protegida por " .. Config.ShieldTime .. "s.")
-	sendUpdate(thief)
-	sendUpdate(victim)
+	if thief.Parent then
+		notify(thief, "Você roubou " .. name .. "!")
+		sendUpdate(thief)
+	end
+	if victim.Parent then
+		notify(victim, thief.Name .. " roubou " .. name .. "! Base protegida por " .. Config.ShieldTime .. "s.")
+		sendUpdate(victim)
+	end
 end
 
 local function onSlotPrompt(player, plot, i)
