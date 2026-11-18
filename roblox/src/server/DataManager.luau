@@ -1073,10 +1073,10 @@ local function performTransfer(victim, thief, slotIndex, creatureName)
 		end
 	end
 
-	local victimApplied, victimPersisted = applyTransferToProfile(
+	local victimApplied = applyTransferToProfile(
 		victim.UserId, victimSession.id, record, "source"
 	)
-	local thiefApplied, thiefPersisted = applyTransferToProfile(
+	local thiefApplied = applyTransferToProfile(
 		thief.UserId, thiefSession.id, record, "destination"
 	)
 	if not victimApplied or not thiefApplied then
