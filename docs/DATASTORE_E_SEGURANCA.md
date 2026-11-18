@@ -51,11 +51,11 @@ O Codex informou:
 
 ## Limite cross-player
 
-DataStore não fornece transação atômica entre duas chaves independentes. O roubo atual ainda altera os dois perfis em memória e depende de saves independentes; portanto, continua vulnerável a perda/duplicação persistida e não está aprovado para produção.
+DataStore não fornece transação atômica entre duas chaves independentes. A implementação antiga do roubo alterava os dois perfis em memória e dependia de saves independentes, com risco de perda/duplicação persistida. Ela foi substituída na branch de trabalho por uma saga recuperável documentada em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md). O protocolo não é uma transação atômica multi-chave e continua sem aprovação para produção até passar pelos testes de falha e concorrência.
 
 A implementação do protocolo foi integrada a `Main.server.luau`, `DataManager.luau` e `Config.luau` na branch de trabalho. O desenho, a máquina de estados e os critérios estão em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md).
 
-**Estado:** código integrado; análise estática com luau-lsp 1.70.1 e sourcemap Rojo 7.7.1 passou no [GitHub Actions](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498), mas ainda não houve build RBXLX aberto no Studio nem teste funcional no Roblox. `Config.StealingEnabled` permanece `false`, portanto o roubo está desativado. O risco cross-player só poderá ser considerado aprovado depois de build, análise Luau e testes de interrupção nos DataStores de desenvolvimento. Não declarar atomicidade multi-chave: o protocolo é recuperável e idempotente, não uma transação atômica.
+**Estado:** código integrado na branch de trabalho; análise estática com luau-lsp 1.70.1 e sourcemap Rojo 7.7.1 passou no [GitHub Actions](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498); build RBXLX foi gerado com Rojo 7.7.1 e aberto no Studio, com estrutura confirmada no Explorer. Nenhum Play, teste de DataStore ou cenário multiplayer foi executado. `Config.StealingEnabled` permanece `false`, portanto o roubo está desativado. Antes de qualquer teste persistente, usar uma experiência separada e nomes exclusivos para `DataStoreName` e `TransferDataStoreName`; os valores atualmente versionados ainda não isolam desenvolvimento. Não declarar atomicidade multi-chave: o protocolo é recuperável e idempotente, não uma transação atômica.
 
 ## Segurança
 - Servidor é autoridade para moedas, inventário, renda, slots e propriedade.
