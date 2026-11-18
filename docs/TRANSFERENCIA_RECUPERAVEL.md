@@ -1,6 +1,6 @@
 # Transferência recuperável entre jogadores
 
-**Status:** especificação técnica; não implementada nem aprovada para uso.
+**Status:** implementação integrada na branch de trabalho; análise estática aprovada no CI; build Rojo 7.7.1 aberta no Studio e estrutura confirmada. Testes funcionais e de DataStore permanecem pendentes; não aprovada para produção.
 **Branch de referência:** fix/phase1-strict-datastore-validation.
 
 ## 1. Decisão
@@ -175,7 +175,7 @@ Cada teste deve inspecionar o journal e os dois perfis no DataStore de desenvolv
 - [x] Snapshots normais não podem sobrescrever perfis com reserva pendente.
 - [ ] Fixtures/harness de falhas.
 - [x] Análise estática Luau com luau-lsp 1.70.1 + sourcemap Rojo 7.7.1 ([CI aprovado](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498)).
-- [ ] Build RBXLX e abertura/análise no Roblox Studio.
+- [x] Build RBXLX gerado com Rojo 7.7.1 e aberto no Studio; estrutura confirmada no Explorer. Análise em execução e testes funcionais permanecem pendentes.
 - [ ] Testes somente em experiência e DataStores de desenvolvimento isolados.
 - [ ] Aprovar o roubo após evidência de todos os critérios de aceitação.
 
