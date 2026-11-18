@@ -436,7 +436,7 @@ local function applyTransferToProfile(userId, sessionId, record, side)
 		updated.lastAppliedTransferId = record.id
 		updated.revision = (old.revision or 0) + 1
 		updated.lastSeen = operationNow
-		updated.lastOfflineClaim = operationNow
+		-- Preserve lastOfflineClaim so recovery does not discard income accrued while transfer was pending.
 		updated.session = { id = sessionId, heartbeat = operationNow }
 		return updated
 	end, function(current)
