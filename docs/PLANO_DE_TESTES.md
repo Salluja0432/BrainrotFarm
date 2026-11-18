@@ -57,6 +57,30 @@ Os casos abaixo foram adicionados ao plano, mas ainda precisam de harness/teste 
 | F1-24 | Classificação de erros DataStore | Throttling/erros transitórios recebem backoff; erros permanentes ou desconhecidos não são repetidos |
 | F1-25 | Invalidação concorrente durante save pendente | Resposta tardia não reativa a sessão; referência local é liberada |
 
+## Transferência recuperável — cenários adicionais
+
+Os cenários abaixo derivam da especificação em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md). Permanecem pendentes; a especificação não significa que a mecânica já esteja corrigida.
+
+| ID | Cenário | Resultado esperado | Ambiente |
+|---|---|---|---|
+| F1-26 | Roubo bem-sucedido | Uma ocorrência sai do slot da vítima e aparece uma vez no inventário do ladrão | Dois clientes + DataStore dev |
+| F1-27 | Roubo simultâneo do mesmo slot | No máximo uma transferência é criada/confirmada | Dois clientes + DataStore dev |
+| F1-28 | Mesmo jogador em duas transferências concorrentes | Apenas uma reserva pendente por perfil; a segunda operação é recusada | Dois clientes + DataStore dev |
+| F1-29 | Falha depois de criar journal, antes das reservas | Nenhum perfil muda; journal órfão não concede propriedade | Falha injetada |
+| F1-30 | Falha depois de reservar só um perfil | Journal pode ser abortado; reserva parcial é removida com segurança; nenhum item muda | Falha injetada |
+| F1-31 | Falha após duas reservas, antes de COMMITTED | Nenhuma alteração de propriedade; recuperação aborta PREPARING | Falha injetada |
+| F1-32 | Resposta ambígua ao gravar COMMITTED | Estado verificado sem cache; sem prova, os dois perfis permanecem bloqueados | Falha injetada |
+| F1-33 | Falha depois de aplicar somente a origem | Vítima e ladrão permanecem bloqueados; recuperação entrega o item uma única vez | Falha injetada |
+| F1-34 | Falha depois de aplicar somente o destino | Recuperação reconhece o lado aplicado e não adiciona outro exemplar | Falha injetada |
+| F1-35 | Falha após APPLIED durante limpeza das reservas | Jogador com reserva restante só é liberado após limpeza; lado já liberado não é reaplicado | Falha injetada |
+| F1-36 | Autosave durante preparação/aplicação | Snapshot antigo não apaga pendingTransfer nem restaura a criatura | Dois clientes + DataStore dev |
+| F1-37 | Desconexão/saída durante transferência | Nenhum participante joga com estado pendente; recuperação termina ou mantém bloqueio seguro | Dois clientes + falha injetada |
+| F1-38 | Recuperação concorrente em servidores diferentes | Um único recuperador adquire os bloqueios necessários; nenhum jogador entra antes da resolução | Dois servidores dev |
+| F1-39 | Repetição de etapas e respostas tardias | Reexecutar qualquer etapa não duplica nem remove uma segunda criatura | Falha injetada |
+| F1-40 | Retenção do journal concluído | Registros necessários à recuperação não são apagados prematuramente | DataStore dev |
+
+**Gate específico:** o roubo só pode ser reativado quando todos os cenários acima passarem. Até lá, a revisão estática não equivale a aprovação funcional.
+
 ## Isolamento obrigatório
 Executar testes somente em uma experiência Roblox separada e com um nome de DataStore exclusivo para desenvolvimento. Não habilitar Studio Access to API Services contra dados reais de jogadores. Veja [Configuração de Roblox Studio e Rojo](ROBLOX_STUDIO_E_ROJO.md).
 
