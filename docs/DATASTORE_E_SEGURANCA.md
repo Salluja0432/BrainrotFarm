@@ -53,9 +53,9 @@ O Codex informou:
 
 DataStore não fornece transação atômica entre duas chaves independentes. O roubo atual ainda altera os dois perfis em memória e depende de saves independentes; portanto, continua vulnerável a perda/duplicação persistida e não está aprovado para produção.
 
-A especificação proposta para o próximo passo está em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md). Ela define journal durável, reservas em ambos os perfis, estados monotônicos, aplicação idempotente e recuperação antes de liberar jogadores.
+A implementação do protocolo foi integrada a `Main.server.luau`, `DataManager.luau` e `Config.luau) na branch de trabalho. O desenho, a máquina de estados e os critérios estão em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md).
 
-**Importante:** o documento é uma especificação, não uma implementação. Até que o protocolo esteja integrado a Main/DataManager e passe pelos testes de interrupção, o risco permanece aberto. Não considerar o problema resolvido por salvar os dois perfis imediatamente, por usar apenas activeTransfers em memória ou por adicionar um journal sem recuperação.
+**Estado:** código integrado, mas ainda não compilado/analisado nem testado no Roblox. `Config.StealingEnabled` permanece `false`, portanto o roubo está desativado. O risco cross-player só poderá ser considerado aprovado depois de build, análise Luau e testes de interrupção nos DataStores de desenvolvimento. Não declarar atomicidade multi-chave: o protocolo é recuperável e idempotente, não uma transação atômica.
 
 ## Segurança
 - Servidor é autoridade para moedas, inventário, renda, slots e propriedade.
