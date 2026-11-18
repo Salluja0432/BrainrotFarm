@@ -344,7 +344,8 @@ local function transitionTransfer(id, expectedStatus, nextStatus, recoverySessio
 	end
 
 	local verified = readTransferRecord(id)
-	if verified and verified.status == nextStatus then
+	if verified and verified.status == nextStatus
+		and (not recoverySessionId or verified.recoverySessionId == recoverySessionId) then
 		return true, verified
 	end
 	return false, result or verified
@@ -358,9 +359,6 @@ local function acquireTransferRecoveryLease(id, recoverySessionId)
 		return transferStore:UpdateAsync(transferKey(id), function(old)
 			if not validTransferRecord(old) then
 				return nil
-			end
-			if old.status == "COMPLETED" then
-				return old
 			end
 			if old.recoverySessionId and old.recoverySessionId ~= recoverySessionId
 				and operationNow - old.recoveryHeartbeat < Config.SessionLockTimeout then
