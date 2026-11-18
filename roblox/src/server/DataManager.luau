@@ -224,6 +224,495 @@ local function markLost(player, session, reason)
 	end
 end
 
+
+local function transferKey(id)
+	return "t_" .. id
+end
+
+local function validTransferRecord(record)
+	if typeof(record) ~= "table"
+		or typeof(record.id) ~= "string" or record.id == ""
+		or record.schemaVersion ~= 1
+		or (record.status ~= "PREPARING" and record.status ~= "COMMITTED"
+			and record.status ~= "APPLIED" and record.status ~= "COMPLETED"
+			and record.status ~= "ABORTED")
+		or not isNonNegativeInteger(record.victimUserId) or record.victimUserId < 1
+		or not isNonNegativeInteger(record.thiefUserId) or record.thiefUserId < 1
+		or record.victimUserId == record.thiefUserId
+		or not isNonNegativeInteger(record.slotIndex)
+		or record.slotIndex < 1 or record.slotIndex > Config.MaxSlots
+		or not isCreatureName(record.creatureName)
+		or not isNonNegativeInteger(record.destinationInventoryCount)
+		or not isNonNegativeFiniteNumber(record.createdAt) then
+		return false
+	end
+
+	for key in record do
+		if key ~= "id" and key ~= "schemaVersion" and key ~= "status"
+			and key ~= "victimUserId" and key ~= "thiefUserId"
+			and key ~= "slotIndex" and key ~= "creatureName"
+			and key ~= "destinationInventoryCount" and key ~= "createdAt" then
+			return false
+		end
+	end
+	return true
+end
+
+local function readTransferUncached(id)
+	local options = Instance.new("DataStoreGetOptions")
+	options.UseCache = false
+	return pcall(function()
+		return transferStore:GetAsync(transferKey(id), options)
+	end)
+end
+
+local function readTransferRecord(id)
+	local ok, record = readTransferUncached(id)
+	if not ok or not validTransferRecord(record) or record.id ~= id then
+		return nil, record
+	end
+	return record
+end
+
+local function sameTransferIdentity(left, right)
+	return validTransferRecord(left)
+		and left.id == right.id
+		and left.victimUserId == right.victimUserId
+		and left.thiefUserId == right.thiefUserId
+		and left.slotIndex == right.slotIndex
+		and left.creatureName == right.creatureName
+		and left.destinationInventoryCount == right.destinationInventoryCount
+end
+
+local function createTransferRecord(record)
+	local ok, result = retry(function()
+		return transferStore:UpdateAsync(transferKey(record.id), function(old)
+			if old ~= nil then
+				if sameTransferIdentity(old, record) then
+					return old
+				end
+				return nil
+			end
+			return table.clone(record)
+		end)
+	end)
+
+	if ok and sameTransferIdentity(result, record) then
+		return true, result
+	end
+
+	local verified = readTransferRecord(record.id)
+	if verified and sameTransferIdentity(verified, record) then
+		return true, verified
+	end
+	return false, result
+end
+
+local function transitionTransfer(id, expectedStatus, nextStatus)
+	local ok, result = retry(function()
+		return transferStore:UpdateAsync(transferKey(id), function(old)
+			if not validTransferRecord(old) then
+				return nil
+			end
+			if old.status == nextStatus then
+				return old
+			end
+			if old.status ~= expectedStatus then
+				return nil
+			end
+			local updated = table.clone(old)
+			updated.status = nextStatus
+			return updated
+		end)
+	end)
+
+	if ok and validTransferRecord(result) and result.status == nextStatus then
+		return true, result
+	end
+
+	local verified = readTransferRecord(id)
+	if verified and verified.status == nextStatus then
+		return true, verified
+	end
+	return false, result or verified
+end
+
+local function updateProfileForSession(userId, sessionId, transform, verify)
+	local key = "u_" .. tostring(userId)
+	local operationNow = os.time()
+	local ok, result = retry(function()
+		operationNow = os.time()
+		return store:UpdateAsync(key, function(old)
+			return transform(old, operationNow)
+		end)
+	end)
+
+	if ok and result and validData(result) and verify(result) then
+		return true, result
+	end
+
+	local verifyOk, verified = readUncached(key)
+	if verifyOk and verified and validData(verified) and verify(verified) then
+		return true, verified
+	end
+	return false, result or verified
+end
+
+local function copyPersistedProfileToSession(session, persisted)
+	local shieldUntil = session.data.shieldUntil or 0
+	local updatedData = table.clone(persisted)
+	updatedData.session = nil
+	updatedData.shieldUntil = shieldUntil
+	session.data = updatedData
+	if persisted.session and isNonNegativeFiniteNumber(persisted.session.heartbeat) then
+		local age = math.max(0, os.time() - persisted.session.heartbeat)
+		session.confirmedAt = os.clock() - age
+	end
+end
+
+local function reserveProfileForTransfer(player, session, transferId)
+	local snapshot = dataPayload(session.data)
+	return updateProfileForSession(player.UserId, session.id, function(old, operationNow)
+		if not old or not validData(old) or not old.session or old.session.id ~= session.id then
+			return nil
+		end
+		if old.pendingTransfer == transferId then
+			return old
+		end
+		if old.pendingTransfer ~= nil then
+			return nil
+		end
+
+		local updated = table.clone(snapshot)
+		updated.pendingTransfer = transferId
+		updated.revision = (old.revision or 0) + 1
+		updated.lastSeen = operationNow
+		updated.lastOfflineClaim = operationNow
+		updated.session = { id = session.id, heartbeat = operationNow }
+		return updated
+	end, function(current)
+		return current.session ~= nil
+			and current.session.id == session.id
+			and current.pendingTransfer == transferId
+	end)
+end
+
+local function applyTransferToProfile(userId, sessionId, record, side)
+	return updateProfileForSession(userId, sessionId, function(old, operationNow)
+		if not old or not validData(old) or not old.session or old.session.id ~= sessionId
+			or old.pendingTransfer ~= record.id then
+			return nil
+		end
+
+		if old.lastAppliedTransferId == record.id then
+			if side == "source" then
+				return if old.placed[record.slotIndex] == "" then old else nil
+			end
+			return if side == "destination" and #old.inventory == record.destinationInventoryCount + 1 then old else nil
+		end
+
+		local updated = table.clone(old)
+		if side == "source" then
+			if updated.placed[record.slotIndex] ~= record.creatureName then
+				return nil
+			end
+			updated.placed = table.clone(updated.placed)
+			updated.placed[record.slotIndex] = ""
+		elseif side == "destination" then
+			if #updated.inventory ~= record.destinationInventoryCount then
+				return nil
+			end
+			updated.inventory = table.clone(updated.inventory)
+			table.insert(updated.inventory, record.creatureName)
+		else
+			return nil
+		end
+
+		updated.lastAppliedTransferId = record.id
+		updated.revision = (old.revision or 0) + 1
+		updated.lastSeen = operationNow
+		updated.lastOfflineClaim = operationNow
+		updated.session = { id = sessionId, heartbeat = operationNow }
+		return updated
+	end, function(current)
+		if not current.session or current.session.id ~= sessionId
+			or current.pendingTransfer ~= record.id
+			or current.lastAppliedTransferId ~= record.id then
+			return false
+		end
+		if side == "source" then
+			return current.placed[record.slotIndex] == ""
+		end
+		if side == "destination" then
+			return #current.inventory == record.destinationInventoryCount + 1
+		end
+		return false
+	end)
+end
+
+local function clearProfileTransferReservation(userId, sessionId, transferId)
+	return updateProfileForSession(userId, sessionId, function(old, operationNow)
+		if not old or not validData(old) or not old.session or old.session.id ~= sessionId then
+			return nil
+		end
+		if old.pendingTransfer == nil then
+			return old
+		end
+		if old.pendingTransfer ~= transferId then
+			return nil
+		end
+
+		local updated = table.clone(old)
+		updated.pendingTransfer = nil
+		updated.revision = (old.revision or 0) + 1
+		updated.lastSeen = operationNow
+		updated.session = { id = sessionId, heartbeat = operationNow }
+		return updated
+	end, function(current)
+		return current.session ~= nil
+			and current.session.id == sessionId
+			and current.pendingTransfer == nil
+	end)
+end
+
+local function releaseProfileLock(userId, sessionId)
+	local key = "u_" .. tostring(userId)
+	local operationNow = os.time()
+	local ok, result = retry(function()
+		operationNow = os.time()
+		return store:UpdateAsync(key, function(old)
+			if not old or not validData(old) then
+				return nil
+			end
+			if old.lastReleasedSession == sessionId and (not old.session or old.session.id ~= sessionId) then
+				return old
+			end
+			if not old.session or old.session.id ~= sessionId then
+				return nil
+			end
+			local updated = table.clone(old)
+			updated.session = nil
+			updated.lastReleasedSession = sessionId
+			updated.lastSeen = operationNow
+			return updated
+		end)
+	end)
+
+	if ok and result and validData(result)
+		and result.lastReleasedSession == sessionId
+		and (not result.session or result.session.id ~= sessionId) then
+		return true
+	end
+
+	local verifyOk, verified = readUncached(key)
+	if verifyOk and verified and validData(verified)
+		and verified.lastReleasedSession == sessionId
+		and (not verified.session or verified.session.id ~= sessionId) then
+		return true
+	end
+	return false, result or verified
+end
+
+local function acquireRecoveryProfile(userId, recoverySessionId, transferId)
+	local key = "u_" .. tostring(userId)
+	local operationNow = os.time()
+	local ok, result = retry(function()
+		operationNow = os.time()
+		return store:UpdateAsync(key, function(old)
+			if not old or not validData(old) or old.pendingTransfer ~= transferId then
+				return nil
+			end
+			if old.session and old.session.id ~= recoverySessionId
+				and operationNow - old.session.heartbeat < Config.SessionLockTimeout then
+				return nil
+			end
+			if old.session and old.session.id == recoverySessionId then
+				return old
+			end
+
+			local updated = table.clone(old)
+			updated.session = { id = recoverySessionId, heartbeat = operationNow }
+			return updated
+		end)
+	end)
+
+	if not ok or not result or not validData(result) or not result.session
+		or result.session.id ~= recoverySessionId or result.pendingTransfer ~= transferId then
+		local verifyOk, verified = readUncached(key)
+		if verifyOk and verified and validData(verified) and verified.session
+			and verified.session.id == recoverySessionId and verified.pendingTransfer == transferId then
+			result = verified
+		else
+			return nil, result or verified
+		end
+	end
+
+	local age = math.max(0, os.time() - result.session.heartbeat)
+	if age >= Config.SessionLockTimeout - Config.SessionHeartbeatInterval then
+		return nil, "Lease de recuperação expirou antes da confirmação"
+	end
+	return result
+end
+
+local function claimOfflineForSession(player, session)
+	local key = "u_" .. tostring(player.UserId)
+	local operationNow = os.time()
+	local startingRevision = session.data.revision or 0
+	local ok, result = retry(function()
+		operationNow = os.time()
+		return store:UpdateAsync(key, function(old)
+			if not old or not validData(old) or not old.session
+				or old.session.id ~= session.id or old.pendingTransfer ~= nil then
+				return nil
+			end
+
+			local updated = table.clone(old)
+			local lastClaim = old.lastOfflineClaim or old.lastSeen or operationNow
+			local elapsed = math.clamp(operationNow - lastClaim, 0, Config.MaxOfflineSeconds)
+			updated.coins += math.floor(elapsed * DataManager.income(old))
+			updated.lastOfflineClaim = operationNow
+			updated.lastSeen = operationNow
+			updated.revision = (old.revision or 0) + 1
+			updated.session = { id = session.id, heartbeat = operationNow }
+			return updated
+		end)
+	end)
+
+	if not ok or not result or not validData(result) or not result.session
+		or result.session.id ~= session.id or result.pendingTransfer ~= nil
+		or result.lastOfflineClaim ~= operationNow or result.revision <= startingRevision then
+		local verifyOk, verified = readUncached(key)
+		if not verifyOk or not verified or not validData(verified)
+			or not verified.session or verified.session.id ~= session.id
+			or verified.pendingTransfer ~= nil
+			or verified.lastOfflineClaim ~= operationNow
+			or verified.revision <= startingRevision then
+			return false, result or verified
+		end
+		result = verified
+	end
+
+	copyPersistedProfileToSession(session, result)
+	return true
+end
+
+local function recoverPendingTransfer(player, session)
+	local transferId = session.data.pendingTransfer
+	local record, readError = readTransferRecord(transferId)
+	if not record then
+		return false, "Journal de transferência ausente/inválido: " .. tostring(readError)
+	end
+
+	local userId = player.UserId
+	local isVictim = record.victimUserId == userId
+	local isThief = record.thiefUserId == userId
+	if not isVictim and not isThief then
+		return false, "O perfil não corresponde a um participante do journal"
+	end
+
+	if record.status == "PREPARING" then
+		local aborted = transitionTransfer(transferId, "PREPARING", "ABORTED")
+		if not aborted then
+			record = readTransferRecord(transferId)
+		else
+			record.status = "ABORTED"
+		end
+	end
+
+	if record and record.status == "ABORTED" then
+		local cleared, persisted = clearProfileTransferReservation(userId, session.id, transferId)
+		if not cleared then
+			return false, "Não foi possível limpar a reserva de uma transferência abortada"
+		end
+		copyPersistedProfileToSession(session, persisted)
+		return true
+	end
+
+	if record and (record.status == "APPLIED" or record.status == "COMPLETED") then
+		if session.data.lastAppliedTransferId ~= transferId then
+			return false, "Journal aplicado, mas o perfil não confirma a aplicação"
+		end
+		local cleared, persisted = clearProfileTransferReservation(userId, session.id, transferId)
+		if not cleared then
+			return false, "Não foi possível limpar a reserva de uma transferência aplicada"
+		end
+		copyPersistedProfileToSession(session, persisted)
+
+		if record.status == "APPLIED" then
+			local otherUserId = if isVictim then record.thiefUserId else record.victimUserId
+			local otherOk, otherProfile = readUncached("u_" .. tostring(otherUserId))
+			if otherOk and otherProfile and validData(otherProfile)
+				and otherProfile.pendingTransfer ~= transferId then
+				transitionTransfer(transferId, "APPLIED", "COMPLETED")
+			end
+		end
+		return true
+	end
+
+	if not record or record.status ~= "COMMITTED" then
+		return false, "Estado de journal não recuperável: " .. tostring(record and record.status)
+	end
+
+	local otherUserId = if isVictim then record.thiefUserId else record.victimUserId
+	local recoverySessionId = game.JobId .. ":transfer-recovery:" .. HttpService:GenerateGUID(false)
+	local otherProfile, lockError = acquireRecoveryProfile(otherUserId, recoverySessionId, transferId)
+	if not otherProfile then
+		return false, "Não foi possível adquirir o outro perfil para recuperação: " .. tostring(lockError)
+	end
+
+	local ownSide = if isVictim then "source" else "destination"
+	local otherSide = if isVictim then "destination" else "source"
+	local ownApplied = applyTransferToProfile(userId, session.id, record, ownSide)
+	local otherApplied = applyTransferToProfile(otherUserId, recoverySessionId, record, otherSide)
+
+	local ownVerifyOk, ownVerify = readUncached("u_" .. tostring(userId))
+	local otherVerifyOk, otherVerify = readUncached("u_" .. tostring(otherUserId))
+	local bothApplied = ownApplied and otherApplied
+		and ownVerifyOk and otherVerifyOk
+		and ownVerify and otherVerify
+		and validData(ownVerify) and validData(otherVerify)
+		and ownVerify.session and ownVerify.session.id == session.id
+		and otherVerify.session and otherVerify.session.id == recoverySessionId
+		and ownVerify.pendingTransfer == transferId
+		and otherVerify.pendingTransfer == transferId
+		and ownVerify.lastAppliedTransferId == transferId
+		and otherVerify.lastAppliedTransferId == transferId
+
+	if not bothApplied then
+		releaseProfileLock(otherUserId, recoverySessionId)
+		return false, "A recuperação não confirmou a aplicação nos dois perfis"
+	end
+
+	local advanced = transitionTransfer(transferId, "COMMITTED", "APPLIED")
+	if not advanced then
+		record = readTransferRecord(transferId)
+		if not record or (record.status ~= "APPLIED" and record.status ~= "COMPLETED") then
+			releaseProfileLock(otherUserId, recoverySessionId)
+			return false, "Não foi possível confirmar o estado APPLIED do journal"
+		end
+	end
+
+	local ownCleared, ownPersisted = clearProfileTransferReservation(userId, session.id, transferId)
+	local otherCleared = clearProfileTransferReservation(otherUserId, recoverySessionId, transferId)
+	releaseProfileLock(otherUserId, recoverySessionId)
+
+	if not ownCleared then
+		return false, "A transferência foi aplicada, mas a reserva do perfil atual não pôde ser removida"
+	end
+
+	copyPersistedProfileToSession(session, ownPersisted)
+	if otherCleared then
+		local otherOk, otherFinal = readUncached("u_" .. tostring(otherUserId))
+		local ownOk, ownFinal = readUncached("u_" .. tostring(userId))
+		if ownOk and otherOk and ownFinal and otherFinal
+			and validData(ownFinal) and validData(otherFinal)
+			and ownFinal.pendingTransfer == nil and otherFinal.pendingTransfer == nil then
+			transitionTransfer(transferId, "APPLIED", "COMPLETED")
+		end
+	end
+	return true
+end
+
 function DataManager.load(player)
 	local key = "u_" .. player.UserId
 	local sessionId = game.JobId .. ":" .. HttpService:GenerateGUID(false)
