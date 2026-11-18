@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local store = DataStoreService:GetDataStore(Config.DataStoreName)
+local transferStore = DataStoreService:GetDataStore(Config.TransferDataStoreName)
 
 local DataManager = {}
 local sessions = {}
@@ -19,6 +20,8 @@ local allowedDataFields = {
 	session = true,
 	lastReleasedSession = true,
 	shieldUntil = true,
+	pendingTransfer = true,
+	lastAppliedTransferId = true,
 }
 
 local function defaultData()
@@ -63,6 +66,8 @@ local function validData(data)
 		or (data.lastReleasedSession ~= nil
 			and (typeof(data.lastReleasedSession) ~= "string" or data.lastReleasedSession == ""))
 		or (data.shieldUntil ~= nil and not isNonNegativeFiniteNumber(data.shieldUntil))
+		or (data.pendingTransfer ~= nil and (typeof(data.pendingTransfer) ~= "string" or data.pendingTransfer == ""))
+		or (data.lastAppliedTransferId ~= nil and (typeof(data.lastAppliedTransferId) ~= "string" or data.lastAppliedTransferId == ""))
 		or (data.session ~= nil and (typeof(data.session) ~= "table"
 			or typeof(data.session.id) ~= "string" or data.session.id == ""
 			or not isNonNegativeFiniteNumber(data.session.heartbeat))) then
@@ -186,6 +191,8 @@ local function matchesSavedPayload(current, snapshot)
 	return current.coins == snapshot.coins
 		and current.version == snapshot.version
 		and current.revision > snapshot.revision
+		and current.pendingTransfer == snapshot.pendingTransfer
+		and current.lastAppliedTransferId == snapshot.lastAppliedTransferId
 		and sameArray(current.inventory, snapshot.inventory)
 		and sameArray(current.placed, snapshot.placed)
 end
@@ -197,6 +204,8 @@ local function dataPayload(data)
 		placed = table.clone(data.placed),
 		version = Config.DataVersion,
 		revision = data.revision or 0,
+		pendingTransfer = data.pendingTransfer,
+		lastAppliedTransferId = data.lastAppliedTransferId,
 	}
 end
 
@@ -205,6 +214,7 @@ local function markLost(player, session, reason)
 		return
 	end
 	session.active = false
+	session.transferBusy = false
 	if sessions[player] == session then
 		sessions[player] = nil
 	end
@@ -282,6 +292,7 @@ function DataManager.load(player)
 		id = sessionId,
 		active = true,
 		busy = false,
+		transferBusy = false,
 		confirmedAt = os.clock() - confirmedAge,
 	}
 	return result
@@ -289,6 +300,9 @@ end
 
 function DataManager.get(player)
 	local session = sessions[player]
+	if session and session.active and session.transferBusy then
+		return nil
+	end
 	if session and session.active
 		and os.clock() - session.confirmedAt < Config.SessionLockTimeout - Config.SessionHeartbeatInterval then
 		return session.data
@@ -319,13 +333,13 @@ end
 
 function DataManager.save(player, releaseSession)
 	local session = sessions[player]
-	if not session or not session.active or not DataManager.get(player) then
+	if not session or not session.active then
 		return false
 	end
-	while session.busy and session.active do
+	while (session.busy or session.transferBusy) and session.active do
 		task.wait(0.05)
 	end
-	if not session.active or sessions[player] ~= session then
+	if not session.active or sessions[player] ~= session or not DataManager.get(player) then
 		return false
 	end
 	session.busy = true
