@@ -343,6 +343,11 @@ local function updateProfileForSession(userId, sessionId, transform, verify)
 	local ok, result = retry(function()
 		operationNow = os.time()
 		return store:UpdateAsync(key, function(old)
+			if not old or not validData(old) or not old.session
+				or old.session.id ~= sessionId
+				or operationNow - old.session.heartbeat >= Config.SessionLockTimeout - Config.SessionHeartbeatInterval then
+				return nil
+			end
 			return transform(old, operationNow)
 		end)
 	end)
@@ -841,6 +846,9 @@ end
 
 
 function DataManager.transfer(victim, thief, slotIndex, creatureName)
+	if not Config.StealingEnabled then
+		return false, "Roubo desativado até a validação do protocolo de transferência"
+	end
 	if victim == thief or not victim.Parent or not thief.Parent
 		or not isNonNegativeInteger(slotIndex) or slotIndex < 1 or slotIndex > Config.MaxSlots
 		or not isCreatureName(creatureName) then
