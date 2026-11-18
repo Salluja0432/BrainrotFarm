@@ -107,6 +107,10 @@ local function pickup(player, plot, i)
 end
 
 local function steal(thief, plot, i)
+	if not Config.StealingEnabled or typeof(DataManager.transfer) ~= "function" then
+		notify(thief, "O roubo está temporariamente desativado enquanto protegemos a transferência de criaturas.")
+		return
+	end
 	if typeof(i) ~= "number" or i % 1 ~= 0 or i < 1 or i > Config.MaxSlots or not plot.slots[i] then
 		return
 	end
