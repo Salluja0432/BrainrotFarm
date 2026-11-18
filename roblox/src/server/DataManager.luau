@@ -243,7 +243,11 @@ local function validTransferRecord(record)
 		or record.slotIndex < 1 or record.slotIndex > Config.MaxSlots
 		or not isCreatureName(record.creatureName)
 		or not isNonNegativeInteger(record.destinationInventoryCount)
-		or not isNonNegativeFiniteNumber(record.createdAt) then
+		or not isNonNegativeFiniteNumber(record.createdAt)
+		or (record.recoverySessionId ~= nil
+			and (typeof(record.recoverySessionId) ~= "string" or record.recoverySessionId == ""))
+		or (record.recoveryHeartbeat ~= nil and not isNonNegativeFiniteNumber(record.recoveryHeartbeat))
+		or ((record.recoverySessionId == nil) ~= (record.recoveryHeartbeat == nil)) then
 		return false
 	end
 
@@ -251,7 +255,8 @@ local function validTransferRecord(record)
 		if key ~= "id" and key ~= "schemaVersion" and key ~= "status"
 			and key ~= "victimUserId" and key ~= "thiefUserId"
 			and key ~= "slotIndex" and key ~= "creatureName"
-			and key ~= "destinationInventoryCount" and key ~= "createdAt" then
+			and key ~= "destinationInventoryCount" and key ~= "createdAt"
+			and key ~= "recoverySessionId" and key ~= "recoveryHeartbeat" then
 			return false
 		end
 	end
@@ -308,10 +313,15 @@ local function createTransferRecord(record)
 	return false, result
 end
 
-local function transitionTransfer(id, expectedStatus, nextStatus)
+local function transitionTransfer(id, expectedStatus, nextStatus, recoverySessionId)
+	local operationNow = os.time()
 	local ok, result = retry(function()
+		operationNow = os.time()
 		return transferStore:UpdateAsync(transferKey(id), function(old)
 			if not validTransferRecord(old) then
+				return nil
+			end
+			if recoverySessionId and old.recoverySessionId ~= recoverySessionId then
 				return nil
 			end
 			if old.status == nextStatus then
@@ -322,6 +332,9 @@ local function transitionTransfer(id, expectedStatus, nextStatus)
 			end
 			local updated = table.clone(old)
 			updated.status = nextStatus
+			if recoverySessionId then
+				updated.recoveryHeartbeat = operationNow
+			end
 			return updated
 		end)
 	end)
@@ -333,6 +346,68 @@ local function transitionTransfer(id, expectedStatus, nextStatus)
 	local verified = readTransferRecord(id)
 	if verified and verified.status == nextStatus then
 		return true, verified
+	end
+	return false, result or verified
+end
+
+
+local function acquireTransferRecoveryLease(id, recoverySessionId)
+	local operationNow = os.time()
+	local ok, result = retry(function()
+		operationNow = os.time()
+		return transferStore:UpdateAsync(transferKey(id), function(old)
+			if not validTransferRecord(old) then
+				return nil
+			end
+			if old.status == "COMPLETED" then
+				return old
+			end
+			if old.recoverySessionId and old.recoverySessionId ~= recoverySessionId
+				and operationNow - old.recoveryHeartbeat < Config.SessionLockTimeout then
+				return nil
+			end
+			local updated = table.clone(old)
+			updated.recoverySessionId = recoverySessionId
+			updated.recoveryHeartbeat = operationNow
+			return updated
+		end)
+	end)
+
+	if ok and validTransferRecord(result) and result.recoverySessionId == recoverySessionId then
+		return true, result
+	end
+
+	local verified = readTransferRecord(id)
+	if verified and verified.recoverySessionId == recoverySessionId then
+		return true, verified
+	end
+	return false, result or verified
+end
+
+local function releaseTransferRecoveryLease(id, recoverySessionId)
+	local ok, result = retry(function()
+		return transferStore:UpdateAsync(transferKey(id), function(old)
+			if not validTransferRecord(old) then
+				return nil
+			end
+			if old.recoverySessionId ~= recoverySessionId then
+				return old
+			end
+			local updated = table.clone(old)
+			updated.recoverySessionId = nil
+			updated.recoveryHeartbeat = nil
+			return updated
+		end)
+	end)
+
+	if ok and validTransferRecord(result)
+		and result.recoverySessionId ~= recoverySessionId then
+		return true
+	end
+
+	local verified = readTransferRecord(id)
+	if verified and verified.recoverySessionId ~= recoverySessionId then
+		return true
 	end
 	return false, result or verified
 end
