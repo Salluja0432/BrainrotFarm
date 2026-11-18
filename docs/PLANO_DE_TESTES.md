@@ -22,6 +22,8 @@ Para cada execução, registrar data/hora, commit, ferramentas/versões, ambient
 
 Todos os cenários abaixo permanecem pendentes até execução e registro de evidências.
 
+**Estado da implementação:** journal, reservas, aplicação idempotente e recuperação foram integrados na branch de trabalho; ainda não há build/análise Luau nem testes funcionais. `Config.StealingEnabled` permanece `false`, então o roubo segue desativado.
+
 | ID | Cenário | Resultado esperado | Ambiente |
 |---|---|---|---|
 | F1-01 | Primeiro acesso | Jogador novo recebe valores iniciais uma única vez | Studio + DataStore dev |
@@ -80,6 +82,11 @@ Os cenários abaixo derivam da especificação em [TRANSFERENCIA_RECUPERAVEL.md]
 | F1-40 | Retenção do journal concluído | Registros necessários à recuperação não são apagados prematuramente | DataStore dev |
 
 **Gate específico:** o roubo só pode ser reativado quando todos os cenários acima passarem. Até lá, a revisão estática não equivale a aprovação funcional.
+
+| F1-41 | Entrada com transferência pendente | Jogador não recebe ações, renda ou HUD utilizável antes da recuperação terminar | Studio + DataStore dev |
+| F1-42 | Recuperador concorrente | Somente o detentor do lease do journal avança o estado da transferência | Dois servidores dev |
+| F1-43 | Transição normal durante lease de recuperação | A transferência original não avança o journal enquanto outro recuperador possui o lease | Falha injetada + dois servidores |
+| F1-44 | Erro inesperado no código de transferência | Ambos os participantes falham fechados; journal/reservas permitem recuperação posterior | Falha injetada |
 
 ## Isolamento obrigatório
 Executar testes somente em uma experiência Roblox separada e com um nome de DataStore exclusivo para desenvolvimento. Não habilitar Studio Access to API Services contra dados reais de jogadores. Veja [Configuração de Roblox Studio e Rojo](ROBLOX_STUDIO_E_ROJO.md).
