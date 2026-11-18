@@ -55,9 +55,9 @@ Os hashes SHA-256 dos cinco arquivos copiados foram comparados com a origem e co
 A alteração ainda não foi validada em Luau/Roblox Studio. Consulte [docs/PLANO_DE_TESTES.md](../docs/PLANO_DE_TESTES.md) para os casos pendentes.
 
 ## Riscos
-- Sem transação atômica entre chaves DataStore de dois jogadores; roubo pode ficar inconsistente em crash entre gravações.
+- Não há transação atômica entre chaves DataStore de dois jogadores. O protocolo recuperável foi integrado na branch de trabalho, mas ainda não foi validado em runtime; o roubo permanece desativado por `Config.StealingEnabled = false`.
 - Chamada DataStore pendurada não pode ser cancelada.
-- Lease, throttling, resultados ambíguos, liberação e shutdown não foram validados em Roblox.
+- Lease, throttling, resultados ambíguos, liberação, recuperação e shutdown não foram validados em Roblox.
 - Nenhum teste funcional de Studio/servidor publicado foi executado nesta integração.
 - A alteração de validação precisa de teste controlado com saves legados representativos antes de adoção na branch principal.
 
