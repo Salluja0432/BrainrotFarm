@@ -321,8 +321,12 @@ local function transitionTransfer(id, expectedStatus, nextStatus, recoverySessio
 			if not validTransferRecord(old) then
 				return nil
 			end
-			if recoverySessionId and old.recoverySessionId ~= recoverySessionId then
-				return nil
+			if recoverySessionId then
+				if old.recoverySessionId ~= recoverySessionId then
+					return nil
+				end
+			elseif old.recoverySessionId ~= nil then
+				return nil -- A normal transfer cannot advance while a recovery worker owns the journal.
 			end
 			if old.status == nextStatus then
 				return old
@@ -345,7 +349,7 @@ local function transitionTransfer(id, expectedStatus, nextStatus, recoverySessio
 
 	local verified = readTransferRecord(id)
 	if verified and verified.status == nextStatus
-		and (not recoverySessionId or verified.recoverySessionId == recoverySessionId) then
+		and (if recoverySessionId then verified.recoverySessionId == recoverySessionId else verified.recoverySessionId == nil) then
 		return true, verified
 	end
 	return false, result or verified
