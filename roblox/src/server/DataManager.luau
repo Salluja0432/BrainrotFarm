@@ -839,6 +839,194 @@ function DataManager.income(data)
 	return total
 end
 
+
+function DataManager.transfer(victim, thief, slotIndex, creatureName)
+	if victim == thief or not victim.Parent or not thief.Parent
+		or not isNonNegativeInteger(slotIndex) or slotIndex < 1 or slotIndex > Config.MaxSlots
+		or not isCreatureName(creatureName) then
+		return false, "Argumentos de transferência inválidos"
+	end
+
+	local victimSession = sessions[victim]
+	local thiefSession = sessions[thief]
+	if not victimSession or not thiefSession or not victimSession.active or not thiefSession.active then
+		return false, "Sessão de um participante indisponível"
+	end
+
+	while (victimSession.busy or thiefSession.busy) and victimSession.active and thiefSession.active do
+		if victimSession.transferBusy or thiefSession.transferBusy then
+			return false, "Um dos participantes já está em outra transferência"
+		end
+		task.wait(0.05)
+	end
+
+	if not victimSession.active or not thiefSession.active
+		or sessions[victim] ~= victimSession or sessions[thief] ~= thiefSession
+		or victimSession.transferBusy or thiefSession.transferBusy
+		or not DataManager.get(victim) or not DataManager.get(thief) then
+		return false, "Sessão indisponível para iniciar a transferência"
+	end
+
+	if victimSession.data.placed[slotIndex] ~= creatureName then
+		return false, "A criatura não está mais no slot informado"
+	end
+
+	victimSession.transferBusy = true
+	thiefSession.transferBusy = true
+
+	local transferId = HttpService:GenerateGUID(false)
+	local record = {
+		id = transferId,
+		schemaVersion = 1,
+		status = "PREPARING",
+		victimUserId = victim.UserId,
+		thiefUserId = thief.UserId,
+		slotIndex = slotIndex,
+		creatureName = creatureName,
+		destinationInventoryCount = #thiefSession.data.inventory,
+		createdAt = os.time(),
+	}
+
+	local function unlockBoth()
+		if sessions[victim] == victimSession and victimSession.active then
+			victimSession.transferBusy = false
+		end
+		if sessions[thief] == thiefSession and thiefSession.active then
+			thiefSession.transferBusy = false
+		end
+	end
+
+	local function invalidateBoth(reason)
+		victimSession.transferBusy = false
+		thiefSession.transferBusy = false
+		markLost(victim, victimSession, reason)
+		markLost(thief, thiefSession, reason)
+		return false, reason
+	end
+
+	local function abortPreparing(reason)
+		local aborted = transitionTransfer(transferId, "PREPARING", "ABORTED")
+		local currentRecord = readTransferRecord(transferId)
+		if not aborted and (not currentRecord or currentRecord.status ~= "ABORTED") then
+			return invalidateBoth("Não foi possível confirmar o cancelamento seguro: " .. tostring(reason))
+		end
+
+		local victimCleared, victimPersisted = clearProfileTransferReservation(
+			victim.UserId, victimSession.id, transferId
+		)
+		local thiefCleared, thiefPersisted = clearProfileTransferReservation(
+			thief.UserId, thiefSession.id, transferId
+		)
+		if not victimCleared or not thiefCleared then
+			return invalidateBoth("Transferência abortada, mas não foi possível limpar todas as reservas")
+		end
+
+		copyPersistedProfileToSession(victimSession, victimPersisted)
+		copyPersistedProfileToSession(thiefSession, thiefPersisted)
+		unlockBoth()
+		return false, reason
+	end
+
+	local journalCreated = createTransferRecord(record)
+	if not journalCreated then
+		unlockBoth()
+		return false, "Não foi possível criar o registro persistente da transferência"
+	end
+
+	local victimReserved, victimReservation = reserveProfileForTransfer(victim, victimSession, transferId)
+	if not victimReserved then
+		return abortPreparing("Não foi possível reservar o perfil da vítima")
+	end
+	copyPersistedProfileToSession(victimSession, victimReservation)
+
+	local thiefReserved, thiefReservation = reserveProfileForTransfer(thief, thiefSession, transferId)
+	if not thiefReserved then
+		return abortPreparing("Não foi possível reservar o perfil do ladrão")
+	end
+	copyPersistedProfileToSession(thiefSession, thiefReservation)
+
+	local committed = transitionTransfer(transferId, "PREPARING", "COMMITTED")
+	if not committed then
+		local currentRecord = readTransferRecord(transferId)
+		if currentRecord and currentRecord.status == "COMMITTED" then
+			committed = true
+		elseif currentRecord and currentRecord.status == "PREPARING" then
+			return abortPreparing("A decisão COMMITTED não foi persistida")
+		else
+			return invalidateBoth("Resultado ambíguo ao confirmar a transferência")
+		end
+	end
+
+	local victimApplied, victimPersisted = applyTransferToProfile(
+		victim.UserId, victimSession.id, record, "source"
+	)
+	local thiefApplied, thiefPersisted = applyTransferToProfile(
+		thief.UserId, thiefSession.id, record, "destination"
+	)
+	if not victimApplied or not thiefApplied then
+		return invalidateBoth("Transferência confirmada, mas a aplicação precisa ser recuperada")
+	end
+
+	local victimVerifyOk, victimVerify = readUncached("u_" .. tostring(victim.UserId))
+	local thiefVerifyOk, thiefVerify = readUncached("u_" .. tostring(thief.UserId))
+	local bothApplied = victimVerifyOk and thiefVerifyOk
+		and victimVerify and thiefVerify
+		and validData(victimVerify) and validData(thiefVerify)
+		and victimVerify.session and victimVerify.session.id == victimSession.id
+		and thiefVerify.session and thiefVerify.session.id == thiefSession.id
+		and victimVerify.pendingTransfer == transferId
+		and thiefVerify.pendingTransfer == transferId
+		and victimVerify.lastAppliedTransferId == transferId
+		and thiefVerify.lastAppliedTransferId == transferId
+		and victimVerify.placed[slotIndex] == ""
+		and #thiefVerify.inventory == record.destinationInventoryCount + 1
+	if not bothApplied then
+		return invalidateBoth("Não foi possível verificar a aplicação nos dois perfis")
+	end
+
+	local applied = transitionTransfer(transferId, "COMMITTED", "APPLIED")
+	if not applied then
+		local currentRecord = readTransferRecord(transferId)
+		if not currentRecord or (currentRecord.status ~= "APPLIED" and currentRecord.status ~= "COMPLETED") then
+			return invalidateBoth("A transferência foi aplicada, mas o estado APPLIED não foi confirmado")
+		end
+	end
+
+	local victimCleared, victimFinal = clearProfileTransferReservation(
+		victim.UserId, victimSession.id, transferId
+	)
+	local thiefCleared, thiefFinal = clearProfileTransferReservation(
+		thief.UserId, thiefSession.id, transferId
+	)
+
+	if victimCleared then
+		copyPersistedProfileToSession(victimSession, victimFinal)
+	else
+		victimSession.transferBusy = false
+		markLost(victim, victimSession, "Transferência aplicada; reserva da vítima será recuperada na próxima entrada")
+	end
+
+	if thiefCleared then
+		copyPersistedProfileToSession(thiefSession, thiefFinal)
+	else
+		thiefSession.transferBusy = false
+		markLost(thief, thiefSession, "Transferência aplicada; reserva do ladrão será recuperada na próxima entrada")
+	end
+
+	if victimCleared and thiefCleared then
+		local victimOk, victimCheck = readUncached("u_" .. tostring(victim.UserId))
+		local thiefOk, thiefCheck = readUncached("u_" .. tostring(thief.UserId))
+		if victimOk and thiefOk and victimCheck and thiefCheck
+			and validData(victimCheck) and validData(thiefCheck)
+			and victimCheck.pendingTransfer == nil and thiefCheck.pendingTransfer == nil then
+			transitionTransfer(transferId, "APPLIED", "COMPLETED")
+		end
+	end
+
+	unlockBoth()
+	return true
+end
+
 function DataManager.save(player, releaseSession)
 	local session = sessions[player]
 	if not session or not session.active then
