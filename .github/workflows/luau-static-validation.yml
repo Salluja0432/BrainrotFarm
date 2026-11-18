@@ -34,7 +34,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rojo sourcemap roblox/default.project.json --output sourcemap.json
+          cd roblox
+          rojo sourcemap default.project.json --output ../sourcemap.json
 
       - name: Install luau-lsp 1.70.1
         shell: bash
@@ -52,10 +53,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd roblox
           luau-lsp analyze \
             --platform=roblox \
-            --sourcemap=sourcemap.json \
-            --definitions=.github/roblox-globals.d.luau \
-            roblox/src/shared/Config.luau \
-            roblox/src/server/DataManager.luau \
-            roblox/src/server/Main.server.luau
+            --sourcemap=../sourcemap.json \
+            --definitions=../.github/roblox-globals.d.luau \
+            src/shared/Config.luau \
+            src/server/DataManager.luau \
+            src/server/Main.server.luau
