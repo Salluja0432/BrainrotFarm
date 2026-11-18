@@ -1,0 +1,39 @@
+name: Luau static validation
+
+on:
+  push:
+    branches:
+      - fix/phase1-strict-datastore-validation
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  luau-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install official Luau CLI 0.747
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            https://github.com/luau-lang/luau/releases/download/0.747/luau-ubuntu.zip \
+            --output "$RUNNER_TEMP/luau.zip"
+          mkdir -p "$RUNNER_TEMP/luau"
+          unzip -q "$RUNNER_TEMP/luau.zip" -d "$RUNNER_TEMP/luau"
+          chmod +x "$RUNNER_TEMP/luau/luau-analyze"
+          echo "$RUNNER_TEMP/luau" >> "$GITHUB_PATH"
+
+      - name: Analyze Roblox Luau sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          luau-analyze roblox/src/shared/Config.luau
+          luau-analyze roblox/src/server/DataManager.luau
+          luau-analyze roblox/src/server/Main.server.luau
