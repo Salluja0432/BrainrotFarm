@@ -888,6 +888,7 @@ function DataManager.load(player)
 		active = true,
 		busy = false,
 		transferBusy = false,
+		loading = true,
 		confirmedAt = os.clock() - confirmedAge,
 	}
 	sessions[player] = session
@@ -910,12 +911,13 @@ function DataManager.load(player)
 		return nil, "Não foi possível confirmar o crédito offline: " .. tostring(offlineError)
 	end
 
+	session.loading = false
 	return session.data
 end
 
 function DataManager.get(player)
 	local session = sessions[player]
-	if session and session.active and session.transferBusy then
+	if session and session.active and (session.loading or session.transferBusy) then
 		return nil
 	end
 	if session and session.active
@@ -1168,7 +1170,7 @@ function DataManager.save(player, releaseSession)
 	if not session or not session.active then
 		return false
 	end
-	while (session.busy or session.transferBusy) and session.active do
+	while (session.busy or session.transferBusy or session.loading) and session.active do
 		task.wait(0.05)
 	end
 	if not session.active or sessions[player] ~= session or not DataManager.get(player) then
