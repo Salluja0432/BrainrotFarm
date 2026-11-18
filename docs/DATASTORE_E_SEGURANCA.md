@@ -53,7 +53,7 @@ O Codex informou:
 
 DataStore não fornece transação atômica entre duas chaves independentes. O roubo atual ainda altera os dois perfis em memória e depende de saves independentes; portanto, continua vulnerável a perda/duplicação persistida e não está aprovado para produção.
 
-A implementação do protocolo foi integrada a `Main.server.luau`, `DataManager.luau` e `Config.luau) na branch de trabalho. O desenho, a máquina de estados e os critérios estão em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md).
+A implementação do protocolo foi integrada a `Main.server.luau`, `DataManager.luau` e `Config.luau` na branch de trabalho. O desenho, a máquina de estados e os critérios estão em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md).
 
 **Estado:** código integrado, mas ainda não compilado/analisado nem testado no Roblox. `Config.StealingEnabled` permanece `false`, portanto o roubo está desativado. O risco cross-player só poderá ser considerado aprovado depois de build, análise Luau e testes de interrupção nos DataStores de desenvolvimento. Não declarar atomicidade multi-chave: o protocolo é recuperável e idempotente, não uma transação atômica.
 
