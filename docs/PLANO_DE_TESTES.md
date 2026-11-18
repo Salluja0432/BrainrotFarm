@@ -14,8 +14,8 @@ Para cada execução, registrar data/hora, commit, ferramentas/versões, ambient
 | JSON de `roblox/default.project.json` | Passou | Parse estático executado. |
 | Caminhos `$path` do Rojo | Passou | `src/shared`, `src/server`, `src/client` existem dentro de `roblox/`. |
 | `git diff --check` | Passou | Executado após as alterações. |
-| Build Rojo reproduzível e rastreável | **Pendente** | O histórico registra um build anterior concluído com `rojo --version` 7.7.1; não há log que vincule essa versão ao `.rbxlx` aberto. |
-| Abrir o `.rbxlx` gerado no Roblox Studio | **Pendente** | Depende do build e do Studio. |
+| Build Rojo reproduzível e rastreável | Passou | Branch `fix/phase1-strict-datastore-validation`, commit `bfa3759`; Rojo 7.7.1; 67.459 bytes; SHA-256 `058EBBBB5CEEBC4A21D10F64E6234BDC021B0A8CA8E9329C19352B7E1922D64A`. |
+| Abrir o `.rbxlx` gerado no Roblox Studio | Passou | Arquivo aberto; Explorer confirmou serviços, pastas, cinco scripts e tipos de instância. Play, Output em execução e DataStore não foram testados. |
 | Execução/validação funcional | **Pendente** | Nenhum cenário funcional executado. |
 
 ## Fase 1 — cenários funcionais obrigatórios
@@ -104,7 +104,7 @@ Executar testes somente em uma experiência Roblox separada e com um nome de Dat
 Primeira sessão; desktop em resoluções distintas; celular; tablet/console; inventário cheio; base cheia; proteção e cooldown; mensagens de DataStore; seleção de item raro.
 
 ## Ferramentas e limitações
-Na validação automatizada de 18/11/2026, Rojo 7.7.1 gerou o sourcemap e luau-lsp 1.70.1 analisou Config, DataManager e Main sem diagnósticos ([execução CI](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498)). Isso é análise estática, não teste de execução. Nenhum build RBXLX, teste de Roblox Studio, DataStore ou cenário multiplayer foi executado ainda.
+Na validação automatizada, Rojo 7.7.1 gerou o sourcemap e luau-lsp 1.70.1 analisou Config, DataManager e Main sem diagnósticos ([execução CI](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498)). Nesta revisão, também foi gerado o build RBXLX com Rojo 7.7.1 e o arquivo foi aberto no Studio; o Explorer confirmou a estrutura esperada. Isso ainda não é teste de execução. Permanecem pendentes Play, Output em execução, DataStore, multiplayer e cenários de falha.
 
 ## Gate de Fase 1
 Aprovar somente após revisão dos arquivos atuais, build Rojo com versão registrada, casos de Studio e DataStore de desenvolvimento executados, concorrência/falhas avaliadas e riscos residuais documentados.
