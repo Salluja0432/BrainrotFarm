@@ -3,6 +3,7 @@ local Config = {}
 -- ===== AJUSTES DO JOGO (edite aqui) =====
 Config.DataStoreName = "BrainrotFarm_v1"
 Config.TransferDataStoreName = "BrainrotFarm_Transfers_v1" -- journal persistente de transferências
+Config.StealingEnabled = false -- Fail closed até a transferência recuperável ser implementada e testada
 Config.DataVersion = 1
 Config.StartingCoins = 100
 Config.StartingCreature = "Gatomelo"
