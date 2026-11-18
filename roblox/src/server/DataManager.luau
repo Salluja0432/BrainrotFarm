@@ -486,7 +486,9 @@ local function applyTransferToProfile(userId, sessionId, record, side)
 			if side == "source" then
 				return if old.placed[record.slotIndex] == "" then old else nil
 			end
-			return if side == "destination" and #old.inventory == record.destinationInventoryCount + 1 then old else nil
+			return if side == "destination"
+				and #old.inventory == record.destinationInventoryCount + 1
+				and old.inventory[#old.inventory] == record.creatureName then old else nil
 		end
 
 		local updated = table.clone(old)
@@ -523,6 +525,7 @@ local function applyTransferToProfile(userId, sessionId, record, side)
 		end
 		if side == "destination" then
 			return #current.inventory == record.destinationInventoryCount + 1
+				and current.inventory[#current.inventory] == record.creatureName
 		end
 		return false
 	end)
@@ -1087,6 +1090,7 @@ local function performTransfer(victim, thief, slotIndex, creatureName)
 		and thiefVerify.lastAppliedTransferId == transferId
 		and victimVerify.placed[slotIndex] == ""
 		and #thiefVerify.inventory == record.destinationInventoryCount + 1
+		and thiefVerify.inventory[#thiefVerify.inventory] == record.creatureName
 	if not bothApplied then
 		return invalidateBoth("Não foi possível verificar a aplicação nos dois perfis")
 	end
