@@ -845,7 +845,7 @@ function DataManager.income(data)
 end
 
 
-function DataManager.transfer(victim, thief, slotIndex, creatureName)
+local function performTransfer(victim, thief, slotIndex, creatureName)
 	if not Config.StealingEnabled then
 		return false, "Roubo desativado até a validação do protocolo de transferência"
 	end
@@ -1033,6 +1033,31 @@ function DataManager.transfer(victim, thief, slotIndex, creatureName)
 
 	unlockBoth()
 	return true
+end
+
+function DataManager.transfer(victim, thief, slotIndex, creatureName)
+	local victimSession = sessions[victim]
+	local thiefSession = sessions[thief]
+	local ok, transferred, reason = pcall(
+		performTransfer,
+		victim,
+		thief,
+		slotIndex,
+		creatureName
+	)
+	if not ok then
+		warn("[DataManager] Erro inesperado durante transferência: " .. tostring(transferred))
+		if victimSession and victimSession.active then
+			victimSession.transferBusy = false
+			markLost(victim, victimSession, "Erro interno durante transferência; recuperação obrigatória")
+		end
+		if thiefSession and thiefSession.active then
+			thiefSession.transferBusy = false
+			markLost(thief, thiefSession, "Erro interno durante transferência; recuperação obrigatória")
+		end
+		return false, "Erro interno; os dois perfis foram bloqueados para recuperação"
+	end
+	return transferred, reason
 end
 
 function DataManager.save(player, releaseSession)
