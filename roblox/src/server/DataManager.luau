@@ -688,8 +688,27 @@ local function recoverPendingTransfer(player, session)
 		return false, "O perfil não corresponde a um participante do journal"
 	end
 
+	local journalRecoveryId = game.JobId .. ":journal-recovery:" .. HttpService:GenerateGUID(false)
+	local leaseAcquired, leaseError = acquireTransferRecoveryLease(transferId, journalRecoveryId)
+	if not leaseAcquired then
+		return false, "Outra rotina está recuperando esta transferência: " .. tostring(leaseError)
+	end
+
+	local function finish(success, reason)
+		local released, releaseError = releaseTransferRecoveryLease(transferId, journalRecoveryId)
+		if not released then
+			warn("[DataManager] Lease do journal não liberado; expirará por timeout: " .. tostring(releaseError))
+		end
+		return success, reason
+	end
+
+	record, readError = readTransferRecord(transferId)
+	if not record or record.recoverySessionId ~= journalRecoveryId then
+		return finish(false, "Não foi possível confirmar a posse do lease do journal: " .. tostring(readError))
+	end
+
 	if record.status == "PREPARING" then
-		local aborted = transitionTransfer(transferId, "PREPARING", "ABORTED")
+		local aborted = transitionTransfer(transferId, "PREPARING", "ABORTED", journalRecoveryId)
 		if not aborted then
 			record = readTransferRecord(transferId)
 		else
@@ -698,21 +717,24 @@ local function recoverPendingTransfer(player, session)
 	end
 
 	if record and record.status == "ABORTED" then
+		if session.data.lastAppliedTransferId == transferId then
+			return finish(false, "Journal ABORTED contradiz um perfil que afirma ter aplicado a transferência")
+		end
 		local cleared, persisted = clearProfileTransferReservation(userId, session.id, transferId)
 		if not cleared then
-			return false, "Não foi possível limpar a reserva de uma transferência abortada"
+			return finish(false, "Não foi possível limpar a reserva de uma transferência abortada")
 		end
 		copyPersistedProfileToSession(session, persisted)
-		return true
+		return finish(true)
 	end
 
 	if record and (record.status == "APPLIED" or record.status == "COMPLETED") then
 		if session.data.lastAppliedTransferId ~= transferId then
-			return false, "Journal aplicado, mas o perfil não confirma a aplicação"
+			return finish(false, "Journal aplicado, mas o perfil não confirma a aplicação")
 		end
 		local cleared, persisted = clearProfileTransferReservation(userId, session.id, transferId)
 		if not cleared then
-			return false, "Não foi possível limpar a reserva de uma transferência aplicada"
+			return finish(false, "Não foi possível limpar a reserva de uma transferência aplicada")
 		end
 		copyPersistedProfileToSession(session, persisted)
 
@@ -721,27 +743,27 @@ local function recoverPendingTransfer(player, session)
 			local otherOk, otherProfile = readUncached("u_" .. tostring(otherUserId))
 			if otherOk and otherProfile and validData(otherProfile)
 				and otherProfile.pendingTransfer ~= transferId then
-				transitionTransfer(transferId, "APPLIED", "COMPLETED")
+				transitionTransfer(transferId, "APPLIED", "COMPLETED", journalRecoveryId)
 			end
 		end
-		return true
+		return finish(true)
 	end
 
 	if not record or record.status ~= "COMMITTED" then
-		return false, "Estado de journal não recuperável: " .. tostring(record and record.status)
+		return finish(false, "Estado de journal não recuperável: " .. tostring(record and record.status))
 	end
 
 	local otherUserId = if isVictim then record.thiefUserId else record.victimUserId
-	local recoverySessionId = game.JobId .. ":transfer-recovery:" .. HttpService:GenerateGUID(false)
-	local otherProfile, lockError = acquireRecoveryProfile(otherUserId, recoverySessionId, transferId)
+	local otherRecoveryId = game.JobId .. ":transfer-recovery:" .. HttpService:GenerateGUID(false)
+	local otherProfile, lockError = acquireRecoveryProfile(otherUserId, otherRecoveryId, transferId)
 	if not otherProfile then
-		return false, "Não foi possível adquirir o outro perfil para recuperação: " .. tostring(lockError)
+		return finish(false, "Não foi possível adquirir o outro perfil para recuperação: " .. tostring(lockError))
 	end
 
 	local ownSide = if isVictim then "source" else "destination"
 	local otherSide = if isVictim then "destination" else "source"
 	local ownApplied = applyTransferToProfile(userId, session.id, record, ownSide)
-	local otherApplied = applyTransferToProfile(otherUserId, recoverySessionId, record, otherSide)
+	local otherApplied = applyTransferToProfile(otherUserId, otherRecoveryId, record, otherSide)
 
 	local ownVerifyOk, ownVerify = readUncached("u_" .. tostring(userId))
 	local otherVerifyOk, otherVerify = readUncached("u_" .. tostring(otherUserId))
@@ -750,32 +772,36 @@ local function recoverPendingTransfer(player, session)
 		and ownVerify and otherVerify
 		and validData(ownVerify) and validData(otherVerify)
 		and ownVerify.session and ownVerify.session.id == session.id
-		and otherVerify.session and otherVerify.session.id == recoverySessionId
+		and otherVerify.session and otherVerify.session.id == otherRecoveryId
 		and ownVerify.pendingTransfer == transferId
 		and otherVerify.pendingTransfer == transferId
 		and ownVerify.lastAppliedTransferId == transferId
 		and otherVerify.lastAppliedTransferId == transferId
 
 	if not bothApplied then
-		releaseProfileLock(otherUserId, recoverySessionId)
-		return false, "A recuperação não confirmou a aplicação nos dois perfis"
+		releaseProfileLock(otherUserId, otherRecoveryId)
+		return finish(false, "A recuperação não confirmou a aplicação nos dois perfis")
 	end
 
-	local advanced = transitionTransfer(transferId, "COMMITTED", "APPLIED")
+	local advanced = transitionTransfer(transferId, "COMMITTED", "APPLIED", journalRecoveryId)
 	if not advanced then
 		record = readTransferRecord(transferId)
-		if not record or (record.status ~= "APPLIED" and record.status ~= "COMPLETED") then
-			releaseProfileLock(otherUserId, recoverySessionId)
-			return false, "Não foi possível confirmar o estado APPLIED do journal"
+		if not record or (record.status ~= "APPLIED" and record.status ~= "COMPLETED")
+			or record.recoverySessionId ~= journalRecoveryId then
+			releaseProfileLock(otherUserId, otherRecoveryId)
+			return finish(false, "Não foi possível confirmar o estado APPLIED do journal")
 		end
 	end
 
 	local ownCleared, ownPersisted = clearProfileTransferReservation(userId, session.id, transferId)
-	local otherCleared = clearProfileTransferReservation(otherUserId, recoverySessionId, transferId)
-	releaseProfileLock(otherUserId, recoverySessionId)
+	local otherCleared = clearProfileTransferReservation(otherUserId, otherRecoveryId, transferId)
+	local otherLockReleased, otherLockError = releaseProfileLock(otherUserId, otherRecoveryId)
+	if not otherLockReleased then
+		warn("[DataManager] Lock do perfil recuperado expirará por timeout: " .. tostring(otherLockError))
+	end
 
 	if not ownCleared then
-		return false, "A transferência foi aplicada, mas a reserva do perfil atual não pôde ser removida"
+		return finish(false, "A transferência foi aplicada, mas a reserva do perfil atual não pôde ser removida")
 	end
 
 	copyPersistedProfileToSession(session, ownPersisted)
@@ -785,10 +811,10 @@ local function recoverPendingTransfer(player, session)
 		if ownOk and otherOk and ownFinal and otherFinal
 			and validData(ownFinal) and validData(otherFinal)
 			and ownFinal.pendingTransfer == nil and otherFinal.pendingTransfer == nil then
-			transitionTransfer(transferId, "APPLIED", "COMPLETED")
+			transitionTransfer(transferId, "APPLIED", "COMPLETED", journalRecoveryId)
 		end
 	end
-	return true
+	return finish(true)
 end
 
 function DataManager.load(player)
