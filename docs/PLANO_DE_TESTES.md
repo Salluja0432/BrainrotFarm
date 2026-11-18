@@ -22,7 +22,7 @@ Para cada execução, registrar data/hora, commit, ferramentas/versões, ambient
 
 Todos os cenários abaixo permanecem pendentes até execução e registro de evidências.
 
-**Estado da implementação:** journal, reservas, aplicação idempotente e recuperação foram integrados na branch de trabalho; ainda não há build/análise Luau nem testes funcionais. `Config.StealingEnabled` permanece `false`, então o roubo segue desativado.
+**Estado da implementação:** journal, reservas, aplicação idempotente e recuperação foram integrados na branch de trabalho; a análise estática com luau-lsp 1.70.1 + sourcemap Rojo 7.7.1 passou no [GitHub Actions](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498). Build RBXLX, abertura no Studio e testes funcionais continuam pendentes. `Config.StealingEnabled` permanece `false`, então o roubo segue desativado.
 
 | ID | Cenário | Resultado esperado | Ambiente |
 |---|---|---|---|
@@ -104,7 +104,7 @@ Executar testes somente em uma experiência Roblox separada e com um nome de Dat
 Primeira sessão; desktop em resoluções distintas; celular; tablet/console; inventário cheio; base cheia; proteção e cooldown; mensagens de DataStore; seleção de item raro.
 
 ## Ferramentas e limitações
-Na auditoria de 17/11/2026, Luau e Luau Analyzer não foram executados. A validação desta branch foi somente por revisão estática do diff; nenhum teste de Roblox Studio, DataStore ou build foi executado. O código alterado precisa ser compilado/analisado e testado na máquina com Roblox Studio antes de ser considerado aprovado.
+Na validação automatizada de 18/11/2026, Rojo 7.7.1 gerou o sourcemap e luau-lsp 1.70.1 analisou Config, DataManager e Main sem diagnósticos ([execução CI](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498)). Isso é análise estática, não teste de execução. Nenhum build RBXLX, teste de Roblox Studio, DataStore ou cenário multiplayer foi executado ainda.
 
 ## Gate de Fase 1
 Aprovar somente após revisão dos arquivos atuais, build Rojo com versão registrada, casos de Studio e DataStore de desenvolvimento executados, concorrência/falhas avaliadas e riscos residuais documentados.
