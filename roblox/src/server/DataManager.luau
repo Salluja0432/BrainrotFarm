@@ -742,10 +742,9 @@ function DataManager.load(player)
 				end
 			end
 
+			-- Offline income is calculated only after any pending transfer is recovered.
+			-- This prevents using a half-applied inventory as the income source.
 			data.lastOfflineClaim = data.lastOfflineClaim or data.lastSeen or operationNow
-			local elapsed = old and math.clamp(operationNow - data.lastOfflineClaim, 0, Config.MaxOfflineSeconds) or 0
-			data.coins += math.floor(elapsed * DataManager.income(data))
-			data.lastOfflineClaim = operationNow
 			data.lastSeen = operationNow
 			data.version = Config.DataVersion
 			data.revision = (data.revision or 0) + 1
@@ -776,7 +775,7 @@ function DataManager.load(player)
 
 	result.session = nil -- The lock remains only in the stored record.
 	result.shieldUntil = 0
-	sessions[player] = {
+	local session = {
 		data = result,
 		id = sessionId,
 		active = true,
@@ -784,7 +783,27 @@ function DataManager.load(player)
 		transferBusy = false,
 		confirmedAt = os.clock() - confirmedAge,
 	}
-	return result
+	sessions[player] = session
+
+	if session.data.pendingTransfer then
+		local recovered, recoveryError = recoverPendingTransfer(player, session)
+		if not recovered then
+			releaseProfileLock(player.UserId, sessionId)
+			session.active = false
+			sessions[player] = nil
+			return nil, recoveryError
+		end
+	end
+
+	local offlineClaimed, offlineError = claimOfflineForSession(player, session)
+	if not offlineClaimed then
+		releaseProfileLock(player.UserId, sessionId)
+		session.active = false
+		sessions[player] = nil
+		return nil, "Não foi possível confirmar o crédito offline: " .. tostring(offlineError)
+	end
+
+	return session.data
 end
 
 function DataManager.get(player)
@@ -857,6 +876,9 @@ function DataManager.save(player, releaseSession)
 			end
 			if not old.session or old.session.id ~= sessionId then
 				return nil -- Never overwrite a record owned by another session.
+			end
+			if old.pendingTransfer ~= nil or snapshot.pendingTransfer ~= nil then
+				return nil -- A normal save must never modify a profile reserved by a transfer.
 			end
 			local nextData = table.clone(snapshot)
 			nextData.revision = (old.revision or 0) + 1
