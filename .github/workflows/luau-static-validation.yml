@@ -18,22 +18,25 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install official Luau CLI 0.747
+      - name: Install luau-lsp 1.70.1
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --silent --show-error \
-            https://github.com/luau-lang/luau/releases/download/0.747/luau-ubuntu.zip \
-            --output "$RUNNER_TEMP/luau.zip"
-          mkdir -p "$RUNNER_TEMP/luau"
-          unzip -q "$RUNNER_TEMP/luau.zip" -d "$RUNNER_TEMP/luau"
-          chmod +x "$RUNNER_TEMP/luau/luau-analyze"
-          echo "$RUNNER_TEMP/luau" >> "$GITHUB_PATH"
+            https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.70.1/luau-lsp-linux-x86_64.zip \
+            --output "$RUNNER_TEMP/luau-lsp.zip"
+          mkdir -p "$RUNNER_TEMP/luau-lsp"
+          unzip -q "$RUNNER_TEMP/luau-lsp.zip" -d "$RUNNER_TEMP/luau-lsp"
+          chmod +x "$RUNNER_TEMP/luau-lsp/luau-lsp"
+          echo "$RUNNER_TEMP/luau-lsp" >> "$GITHUB_PATH"
 
       - name: Analyze Roblox Luau sources
         shell: bash
         run: |
           set -euo pipefail
-          luau-analyze roblox/src/shared/Config.luau
-          luau-analyze roblox/src/server/DataManager.luau
-          luau-analyze roblox/src/server/Main.server.luau
+          luau-lsp analyze \
+            --platform=roblox \
+            --definitions=.github/roblox-globals.d.luau \
+            roblox/src/shared/Config.luau \
+            roblox/src/server/DataManager.luau \
+            roblox/src/server/Main.server.luau
