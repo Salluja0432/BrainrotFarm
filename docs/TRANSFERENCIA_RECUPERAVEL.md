@@ -174,8 +174,9 @@ Cada teste deve inspecionar o journal e os dois perfis no DataStore de desenvolv
 - [x] Lease persistente para serializar recuperadores concorrentes.
 - [x] Snapshots normais não podem sobrescrever perfis com reserva pendente.
 - [ ] Fixtures/harness de falhas.
-- [ ] Build e análise Luau.
+- [x] Análise estática Luau com luau-lsp 1.70.1 + sourcemap Rojo 7.7.1 ([CI aprovado](https://github.com/Salluja0432/BrainrotFarm/actions/runs/44214054498)).
+- [ ] Build RBXLX e abertura/análise no Roblox Studio.
 - [ ] Testes somente em experiência e DataStores de desenvolvimento isolados.
 - [ ] Aprovar o roubo após evidência de todos os critérios de aceitação.
 
-**Estado de segurança:** a implementação está integrada somente na branch de trabalho e ainda não foi compilada/analisada nem testada no Roblox. `Config.StealingEnabled` permanece `false`; o roubo continua desativado até os testes de aceitação passarem. A lista de itens marcados acima indica código presente, não comportamento comprovado.
+**Estado de segurança:** a implementação está integrada somente na branch de trabalho e a análise estática passou no CI, mas ainda falta build RBXLX e teste funcional no Roblox Studio. `Config.StealingEnabled` permanece `false`; o roubo continua desativado até os testes de aceitação passarem. A lista de itens marcados acima indica código presente, não comportamento comprovado.
