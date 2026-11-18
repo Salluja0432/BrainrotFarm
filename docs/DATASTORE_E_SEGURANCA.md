@@ -50,7 +50,12 @@ O Codex informou:
 10. Shutdown coordena saves e liberação dentro dos limites da plataforma.
 
 ## Limite cross-player
-DataStore não fornece transação atômica simples entre duas chaves independentes. Um roubo altera dados da vítima e do ladrão; crash entre gravações pode perder ou duplicar transferência persistida. É necessário projetar journal/transação recuperável ou reduzir operações cross-key. Não declarar roubo durável apenas porque a transferência em memória não faz yield.
+
+DataStore não fornece transação atômica entre duas chaves independentes. O roubo atual ainda altera os dois perfis em memória e depende de saves independentes; portanto, continua vulnerável a perda/duplicação persistida e não está aprovado para produção.
+
+A especificação proposta para o próximo passo está em [TRANSFERENCIA_RECUPERAVEL.md](TRANSFERENCIA_RECUPERAVEL.md). Ela define journal durável, reservas em ambos os perfis, estados monotônicos, aplicação idempotente e recuperação antes de liberar jogadores.
+
+**Importante:** o documento é uma especificação, não uma implementação. Até que o protocolo esteja integrado a Main/DataManager e passe pelos testes de interrupção, o risco permanece aberto. Não considerar o problema resolvido por salvar os dois perfis imediatamente, por usar apenas activeTransfers em memória ou por adicionar um journal sem recuperação.
 
 ## Segurança
 - Servidor é autoridade para moedas, inventário, renda, slots e propriedade.
